@@ -107,11 +107,10 @@ function updateLanding(run, ac, world) {
   finish(run, ok, { medal: medalFor(res.score), score: res.score, headline, lines: res.lines });
 }
 
-function updateCrate(run, c, world, dt) {
+/** Crate flight: ballistic, then the canopy opens and it drifts with the wind toward a 7 m/s descent. */
+function stepCrate(c, wind, dt) {
   c.t += dt;
   if (c.t > 0.9) {
-    // the canopy opens and the crate drifts with the wind toward a 7 m/s descent
-    const wind = world.windAt(c.pos, run.time);
     c.chute = Math.min(1, c.chute + dt * 1.5);
     c.vel[0] += (wind[0] - c.vel[0]) * 0.9 * c.chute * dt;
     c.vel[2] += (wind[2] - c.vel[2]) * 0.9 * c.chute * dt;
@@ -119,6 +118,25 @@ function updateCrate(run, c, world, dt) {
   }
   c.vel[1] -= 9.81 * dt * (1 - c.chute * 0.9);
   for (let i = 0; i < 3; i++) c.pos[i] += c.vel[i] * dt;
+}
+
+const newCrate = (ac) => {
+  const d = quatRotate(ac.q, [0, -1.6, 0.8]);
+  return { pos: [ac.pos[0] + d[0], ac.pos[1] + d[1], ac.pos[2] + d[2]], vel: [...ac.vel], t: 0, chute: 0, landed: false };
+};
+
+/** Where a crate released now would touch down: the drop-aim reticle. */
+export function predictCrateLanding(ac, world, time) {
+  const c = newCrate(ac);
+  for (let i = 0; i < 400; i++) {
+    stepCrate(c, world.windAt(c.pos, time), 0.05);
+    if (c.pos[1] <= world.surfaceAt(c.pos[0], c.pos[2]).height) return c.pos;
+  }
+  return null;
+}
+
+function updateCrate(run, c, world, dt) {
+  stepCrate(c, world.windAt(c.pos, run.time), dt);
   const g = world.surfaceAt(c.pos[0], c.pos[2]).height;
   if (c.pos[1] > g + 0.5) return;
   c.landed = true;
@@ -130,7 +148,7 @@ function updateCrate(run, c, world, dt) {
     run.say(`Crate lost ${Math.round(dist)} m wide`, '#ff8a6b');
     return;
   }
-  Object.assign(t, { done: true, dist, score: Math.max(0, Math.round(100 - dist * 1.6)) });
+  Object.assign(t, { done: true, dist, score: Math.round(100 * Math.exp(-dist / 45)) });
   run.say(`${t.name}: ${Math.round(dist)} m from the mark  (+${t.score})`, dist < 15 ? '#ffd36b' : '#ffffff', 3);
   run.sounds.push(dist < 15 ? 'ring' : 'thud');
   const next = run.targets[++run.targetIndex];
@@ -140,8 +158,7 @@ function updateCrate(run, c, world, dt) {
 function updateDrop(run, ac, world, dt, drop) {
   if (drop && run.cratesLeft > 0 && !ac.onGround) {
     run.cratesLeft--;
-    const d = quatRotate(ac.q, [0, -1.6, 0.8]);
-    run.crates.push({ pos: [ac.pos[0] + d[0], ac.pos[1] + d[1], ac.pos[2] + d[2]], vel: [...ac.vel], t: 0, chute: 0, landed: false });
+    run.crates.push(newCrate(ac));
     run.sounds.push('drop');
     run.say(`Crate away: ${run.cratesLeft} left`, '#ffffff', 1.5);
   }

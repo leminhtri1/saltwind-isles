@@ -118,6 +118,16 @@ export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) 
   if (ac && !ac.crashed) {
     if (hud.waypoint) waypointMarker(ctx, W, H, viewProj, hud.waypoint, ac, k, panelTop);
     flightPathMarker(ctx, W, H, viewProj, ac, k);
+    const aim = hud.dropAim && projectToScreen(viewProj, hud.dropAim, W, H);
+    if (aim) {
+      // where a crate released now would land
+      ctx.strokeStyle = '#ffe14d';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(aim.x - 11 * k, aim.y - 11 * k, 22 * k, 22 * k);
+      line(ctx, aim.x - 20 * k, aim.y, aim.x + 20 * k, aim.y);
+      line(ctx, aim.x, aim.y - 20 * k, aim.x, aim.y + 20 * k);
+      shadowText(ctx, 'CRATE', aim.x, aim.y + 30 * k, 13 * k, '#ffe14d', 800);
+    }
     const small = (t, x, y, align) => shadowText(ctx, t, x, y, 15 * k, INK, 700, MONO, align);
     small(`AGL ${Math.round(s.agl)} m`, W - 98 * k, midY + 175 * k, 'right');
     small(`VS ${s.vs >= 0 ? '+' : ''}${s.vs.toFixed(1)}`, W - 98 * k, midY + 196 * k, 'right');

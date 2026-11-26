@@ -9,7 +9,7 @@ import { Controls } from './controls.js';
 import { FlightCamera } from './camera.js';
 import { Effects } from './effects.js';
 import { FlightAudio } from './audio.js';
-import { MISSIONS, formatTime, objectiveLines, startMission, updateMission } from './missions.js';
+import { MISSIONS, formatTime, objectiveLines, predictCrateLanding, startMission, updateMission } from './missions.js';
 import { sinkRating } from './landing-score.js';
 import { describeCrash } from './crash-report.js';
 import { drawInstrumentPanel } from './hud-instruments.js';
@@ -187,7 +187,15 @@ function drawFrame(W, H) {
     Object.assign(info, {
       lines: objectiveLines(run, ac), clock: run.def.kind !== 'free' ? formatTime(run.time) : null, waypoint: run.waypoint,
       bugDeg: s.bearing === null ? null : ((s.bearing * 180) / Math.PI + 360) % 360,
+      dropAim: run.def.kind === 'drop' && !ac.onGround && run.cratesLeft > 0 ? predictCrateLanding(ac, world, run.time) : null,
     });
+    const target = info.dropAim && run.targets[run.targetIndex];
+    if (target) {
+      // the crate's predicted miss, in the pilot's frame: short or long, left or right of the mark
+      const dx = target.pos[0] - info.dropAim[0], dz = target.pos[2] - info.dropAim[2], h = s.heading;
+      const ahead = dx * Math.sin(h) - dz * Math.cos(h), side = dx * Math.cos(h) + dz * Math.sin(h);
+      info.lines.push(`Crate lands ${Math.round(Math.abs(ahead))} m ${ahead > 0 ? 'short' : 'long'}, ${Math.round(Math.abs(side))} m ${side > 0 ? 'left' : 'right'}`);
+    }
     drawHudOverlay(hud, W, H, s, info, viewProj, ac, panelTop, game.time);
     minimap.draw(hud, W - 105 * k, 100 * k, 84 * k, ac, run);
   } else if (game.message && state === 'flying') drawHudOverlay(hud, W, H, s, info, viewProj, ac, H, game.time);
