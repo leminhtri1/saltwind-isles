@@ -1,7 +1,4 @@
-// Screenshot scenes behind ?shot=<name>. Each starts a real mission, places the aircraft and plays
-// the flight model forward a fixed number of steps, so the same URL always gives the same frame:
-// approach (final to Port Saltwind through the gate), rings (mid-course at Gull Rock), drop (a crate
-// under its chute over Kelp Bay), cockpit (the panel on short final) and debrief (a stall and crash).
+// Screenshot scenes behind ?shot=<name>: a real mission placed and stepped forward deterministically.
 import { DEG, quatFromAttitude, quatRotate, scale } from './math3d.js';
 import { MISSIONS, approachGeometry, glidePathPoint } from './missions.js';
 
@@ -82,16 +79,6 @@ export function stageShot(name, api) {
       camera.orbit(game.ac.crashed ? game.ac.crashed.pos : game.ac.pos, 55, 16, FRAME, 0.12, 14);
     }
     api.finishSortie();
-  } else if (name === 'cockpit') {
-    api.startMissionAt(missionIndex('approach'));
-    const geo = approachGeometry('port', -1);
-    game.run.gate.passed = true;
-    game.run.waypoint = { pos: geo.threshold, label: 'THRESHOLD' };
-    place(game.ac, glidePathPoint(geo, 650, 300), geo.heading + 2, 2, -3, 38);
-    game.ac.flaps = 2;
-    game.ac.flapAngle = 1;
-    camera.mode = 'cockpit';
-    run(api, 0.6);
   } else {
     // approach: chase view on final, the gate ring ahead and the runway beyond
     api.startMissionAt(missionIndex('approach'));

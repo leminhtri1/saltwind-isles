@@ -1,6 +1,4 @@
-// Grades a landing out of 100 from the touchdown the flight model recorded: sink rate, distance
-// from the threshold against the strip's touchdown zone, centreline, wings level, a flared nose,
-// and whether the aircraft stopped on the strip.
+// Grades a landing out of 100: sink rate, touchdown zone, centreline, wings level, flare, stopping.
 import { findStrip } from './world-layout.js';
 
 export function medalFor(score) {

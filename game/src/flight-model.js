@@ -1,7 +1,4 @@
-// The Kittiwake's flight model: thrust from throttle and propeller, lift that grows with airspeed
-// squared and angle of attack until the wing stalls, drag, sideslip and gravity; control authority
-// that fades at low speed (prop wash helps); wheels, brakes and steering on the ground; fuel burn;
-// and the damage and crashes that hard landings, trees, cliffs, overspeed and over-g cause.
+// The Kittiwake flight model: thrust, lift to the stall, drag, controls fading with speed, wheels, fuel and damage.
 import {
   DEG, attitudeOf, clamp, cross, damp, dot, length, madd, normalize, quatAxisAngle, quatFromAttitude,
   quatMul, quatNormalize, quatRotate, scale, sub,

@@ -1,6 +1,4 @@
-// Views of the aircraft: a chase camera that trails on a smoothed offset (it never lags in distance
-// or swings through loops), a cockpit eye at the pilot's seat, and a slow orbit for menus and wrecks.
-// Right-drag looks around in any of them and the view eases back on release.
+// Chase camera on a smoothed offset, cockpit eye, and a slow orbit for menus and wrecks; right-drag looks.
 import { add, clamp, damp, lerp3, madd, normalize, quatRotate, scale } from './math3d.js';
 
 export class FlightCamera {

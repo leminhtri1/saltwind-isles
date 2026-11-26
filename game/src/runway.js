@@ -1,6 +1,4 @@
-// Airstrip meshes: Port Saltwind's asphalt runway with threshold bars, painted designators,
-// centreline, aiming blocks, edge and approach lights; the grass strips with mown bands and marker
-// boards. Lights are also returned as glow points for the additive sprite pass.
+// Airstrip meshes: painted asphalt runway with edge, approach and PAPI lights; mown grass strips.
 import { mat4Compose, mat4RotateY, mat4Translate, mat4TransformPoint } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 import { STRIPS, stripDesignators } from './world-layout.js';

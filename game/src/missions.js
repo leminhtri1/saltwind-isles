@@ -1,5 +1,4 @@
-// Mission runtime: sets up a sortie from the catalogue, follows each physics step (rings threaded,
-// gate and touchdown, crates under canopy drifting onto village marks, mail stops), and grades it.
+// Mission runtime: start a sortie, follow each step (rings, gate, touchdown, crates, mail), grade it.
 import { DEG, length, quatRotate } from './math3d.js';
 import { layRingCourse, makeRing, ringCrossing } from './rings.js';
 import { medalFor, scoreLanding } from './landing-score.js';

@@ -1,5 +1,4 @@
-// Small canvas-2D drawing helpers shared by the instruments, the head-up layer, the chart and the
-// menu screens: filled discs and polygons, strokes, text, gradients and translucent panels.
+// Canvas-2D helpers shared by the instruments, head-up layer, chart and screens.
 
 export const FONT = '"Segoe UI", "Trebuchet MS", Arial, sans-serif';
 export const SERIF = 'Georgia, "Palatino Linotype", "Book Antiqua", serif';

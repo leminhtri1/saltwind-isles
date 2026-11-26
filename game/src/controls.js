@@ -1,6 +1,4 @@
-// Keyboard and mouse input. Keys ramp the stick smoothly so small taps make small corrections;
-// holding the left mouse button turns the mouse into a yoke; right-drag looks around; the wheel
-// and number keys set the throttle.
+// Keyboard and mouse: ramped stick keys, left-drag mouse yoke, right-drag look, wheel and number-key throttle.
 
 const PITCH_DOWN = ['KeyW', 'ArrowUp'];
 const PITCH_UP = ['KeyS', 'ArrowDown'];

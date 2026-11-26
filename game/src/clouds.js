@@ -1,5 +1,4 @@
-// Fair-weather cumulus: clusters of flattened low-poly puffs drifting at 500 to 900 metres,
-// sunlit on top and shaded underneath in the same faceted style as the islands.
+// Fair-weather cumulus: clusters of flattened low-poly puffs, sunlit on top.
 import { MeshBuilder } from './mesh-builder.js';
 import { createRandom } from './noise.js';
 import { WORLD_SEED } from './world-layout.js';

@@ -1,5 +1,4 @@
-// Small vector, quaternion and 4x4 matrix helpers (column-major, as WebGL expects).
-// World axes: +X east, +Y up, +Z south. A body's nose points down its local -Z axis.
+// Vectors, quaternions and column-major 4x4 matrices. +X east, +Y up, +Z south; a body's nose is local -Z.
 
 export const DEG = Math.PI / 180;
 export const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);

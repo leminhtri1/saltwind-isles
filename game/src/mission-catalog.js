@@ -1,5 +1,4 @@
-// The mission catalogue: each sortie's goal, start, wind and medal times, the ring course anchors
-// around Lantern Point and Gull Rock, and the approach geometry that places gates on the glide path.
+// The mission catalogue, ring-course anchors and the approach geometry that puts gates on the glide path.
 import { DEG } from './math3d.js';
 import { findStrip, stripDirection } from './world-layout.js';
 

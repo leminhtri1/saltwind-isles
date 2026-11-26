@@ -1,5 +1,4 @@
-// The hand-placed geography of the Saltwind Isles: island shapes, airstrips, villages, landmarks,
-// the golden-hour sun and the size of the world. Everything procedural grows from these anchors.
+// Hand-placed geography: islands, airstrips, villages, lighthouse, golden-hour sun, world size.
 import { DEG } from './math3d.js';
 
 export const WORLD_SEED = 7;

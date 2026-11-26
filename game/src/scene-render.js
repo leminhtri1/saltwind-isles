@@ -1,6 +1,4 @@
-// Draws one frame of the 3D world in order: sky, islands, sea, airstrips, trees, villages, clouds,
-// the aircraft with its moving control surfaces and propeller, mission rings, crates and markers,
-// then smoke and the additive glows of runway lights, rings and fire.
+// Draws a frame: sky, islands, sea, strips, scenery, clouds, aircraft, mission objects, smoke and glows.
 import {
   DEG, clamp, length, mat4Compose, mat4FromQuatPos, mat4Identity, mat4LookAt, mat4Perspective, mat4RotateX, mat4RotateY,
   mat4RotateZ, mat4Scale, mat4Translate, quatRotate, sub,
@@ -8,79 +6,25 @@ import {
 import { SpriteBatch } from './gl-renderer.js';
 import { HINGES, buildAircraftMeshes } from './aircraft-mesh.js';
 import { RING_RADIUS, buildRingMesh } from './rings.js';
-import { MeshBuilder } from './mesh-builder.js';
+import { buildChute, buildCrate, buildTargetMarker, buildWindsock } from './prop-meshes.js';
 import { SUN_DIR, findStrip, stripDirection } from './world-layout.js';
 
 function hingeX(model, y, z, angle) {
   return mat4Compose(model, mat4Translate(0, y, z), mat4RotateX(angle), mat4Translate(0, -y, -z));
 }
 
-function buildCrate() {
-  const mb = new MeshBuilder();
-  mb.box(0, 0, 0, 1.4, 1.1, 1.4, [0.62, 0.42, 0.22, 0]);
-  mb.box(0, 0, 0, 1.46, 0.2, 1.46, [0.85, 0.2, 0.15, 0]);
-  return mb.build();
-}
-
-function buildChute() {
-  const mb = new MeshBuilder();
-  mb.blob(0, 6, 0, 3.6, 1.8, 3.6, [0.98, 0.5, 0.16, 0.15], 4, 8, [0.95, 0.92, 0.85, 0.1]);
-  for (const [x, z] of [[2.8, 0], [-2.8, 0], [0, 2.8], [0, -2.8]]) mb.box(x / 2, 3, z / 2, 0.06, 5.2, 0.06, [0.9, 0.9, 0.9, 0]);
-  return mb.build();
-}
-
-function buildTargetMarker() {
-  const mb = new MeshBuilder();
-  const ring = (r0, r1, color) => {
-    for (let i = 0; i < 24; i++) {
-      const a0 = (i / 24) * Math.PI * 2, a1 = ((i + 1) / 24) * Math.PI * 2;
-      const p = (r, a) => [Math.cos(a) * r, 0, Math.sin(a) * r];
-      mb.quad(p(r0, a0), p(r1, a0), p(r1, a1), p(r0, a1), color);
-    }
-  };
-  ring(0, 6, [1, 0.5, 0.15, 0.6]);
-  ring(6, 14, [0.97, 0.95, 0.9, 0.4]);
-  ring(14, 20, [1, 0.5, 0.15, 0.6]);
-  ring(20, 26, [0.97, 0.95, 0.9, 0.4]);
-  return mb.build();
-}
-
-function buildWindsock() {
-  const mb = new MeshBuilder();
-  mb.box(0, 4, 0, 0.18, 8, 0.18, [0.8, 0.8, 0.8, 0]);
-  mb.push(mat4Compose(mat4Translate(0, 7.8, 0), mat4RotateX(-Math.PI / 2)));
-  for (let k = 0; k < 4; k++) mb.frustum(0, k * 0.9, 0, 0.55 - k * 0.08, (k + 1) * 0.9, 0.55 - (k + 1) * 0.08, 8, k % 2 ? [0.96, 0.95, 0.92, 0] : [1, 0.45, 0.1, 0]);
-  mb.pop();
-  return mb.build();
-}
-
 export class SceneRenderer {
   constructor(renderer, world) {
-    this.r = renderer;
-    this.world = world;
-    const up = (m) => renderer.uploadMesh(m);
-    this.terrain = up(world.terrain.buildMesh());
-    this.water = renderer.uploadWater(world.terrain.buildWaterGrid(2));
-    this.stripBase = up(world.airstrips.base);
-    this.stripPaint = up(world.airstrips.paint);
-    this.stripProps = up(world.airstrips.props);
-    this.trees = up(world.scenery.trees);
-    this.buildings = up(world.scenery.buildings);
-    this.clouds = up(world.clouds);
-    const ac = buildAircraftMeshes();
-    this.plane = Object.fromEntries(Object.entries(ac).map(([k, v]) => [k, up(v)]));
-    this.ring = up(buildRingMesh());
-    this.crate = up(buildCrate());
-    this.chute = up(buildChute());
-    this.marker = up(buildTargetMarker());
-    this.windsock = up(buildWindsock());
-    const port = findStrip('port');
-    const d = stripDirection(port);
+    const up = (m) => renderer.uploadMesh(m), { airstrips: a, scenery } = world;
+    Object.assign(this, {
+      r: renderer, world, terrain: up(world.terrain.buildMesh()), water: renderer.uploadWater(world.terrain.buildWaterGrid(2)),
+      stripBase: up(a.base), stripPaint: up(a.paint), stripProps: up(a.props), trees: up(scenery.trees), buildings: up(scenery.buildings),
+      clouds: up(world.clouds), ring: up(buildRingMesh()), crate: up(buildCrate()), chute: up(buildChute()), marker: up(buildTargetMarker()),
+      windsock: up(buildWindsock()), smoke: new SpriteBatch(), glow: new SpriteBatch(), debris: new SpriteBatch(), identity: mat4Identity(),
+    });
+    this.plane = Object.fromEntries(Object.entries(buildAircraftMeshes()).map(([k, v]) => [k, up(v)]));
+    const port = findStrip('port'), d = stripDirection(port);
     this.sockPos = [port.x - d[0] * 380 + d[2] * 40, port.elev, port.z - d[2] * 380 - d[0] * 40];
-    this.smoke = new SpriteBatch();
-    this.glow = new SpriteBatch();
-    this.debris = new SpriteBatch();
-    this.identity = mat4Identity();
   }
 
   drawAircraft(ac, cockpit) {
@@ -88,15 +32,14 @@ export class SceneRenderer {
     const model = mat4FromQuatPos(ac.q, ac.pos);
     const tint = ac.crashed ? [0.42, 0.38, 0.36] : [1, 1, 1];
     if (!cockpit) {
-      r.drawMesh(P.body, model, { tint });
-      const wt = HINGES.wingTrailing, a = ac.surfaces.aileron * 0.38, f = ac.flapAngle * 0.62;
-      r.drawMesh(P.aileronL, hingeX(model, wt.y, wt.z, a), { tint });
-      r.drawMesh(P.aileronR, hingeX(model, wt.y, wt.z, -a), { tint });
-      r.drawMesh(P.flapL, hingeX(model, wt.y, wt.z, f), { tint });
-      r.drawMesh(P.flapR, hingeX(model, wt.y, wt.z, f), { tint });
-      r.drawMesh(P.elevator, hingeX(model, HINGES.elevator.y, HINGES.elevator.z, -ac.surfaces.elevator * 0.42), { tint });
-      const rz = HINGES.rudder.z;
-      r.drawMesh(P.rudder, mat4Compose(model, mat4Translate(0, 0, rz), mat4RotateY(ac.surfaces.rudder * 0.45), mat4Translate(0, 0, -rz)), { tint });
+      const { wingTrailing: wt, elevator: el, rudder: { z: rz } } = HINGES, a = ac.surfaces.aileron * 0.38, f = ac.flapAngle * 0.62;
+      const parts = [
+        [P.body, model], [P.aileronL, hingeX(model, wt.y, wt.z, a)], [P.aileronR, hingeX(model, wt.y, wt.z, -a)],
+        [P.flapL, hingeX(model, wt.y, wt.z, f)], [P.flapR, hingeX(model, wt.y, wt.z, f)],
+        [P.elevator, hingeX(model, el.y, el.z, -ac.surfaces.elevator * 0.42)],
+        [P.rudder, mat4Compose(model, mat4Translate(0, 0, rz), mat4RotateY(ac.surfaces.rudder * 0.45), mat4Translate(0, 0, -rz))],
+      ];
+      for (const [mesh, m] of parts) r.drawMesh(mesh, m, { tint });
     }
     const py = HINGES.prop.y, pz = HINGES.prop.z;
     const spin = mat4Compose(model, mat4Translate(0, py, pz), mat4RotateZ(ac.propAngle), mat4Translate(0, -py, -pz));
@@ -142,19 +85,12 @@ export class SceneRenderer {
     const proj = mat4Perspective(camera.fov * DEG, aspect, cockpit ? 0.3 : 0.8, 70000);
     const viewProj = r.beginFrame({ view, proj, camPos: camera.eye, sunDir: SUN_DIR, time, fogDensity: 1 / 6200 });
     const right = [view[0], view[4], view[8]], up = [view[1], view[5], view[9]];
-    this.smoke.clear();
-    this.glow.clear();
-    this.debris.clear();
+    for (const b of [this.smoke, this.glow, this.debris]) b.clear();
 
     r.drawSky();
     r.drawMesh(this.terrain, this.identity);
     r.drawWater(this.water);
-    r.drawMesh(this.stripBase, this.identity, { decal: 1 });
-    r.drawMesh(this.stripPaint, this.identity, { decal: 2 });
-    r.drawMesh(this.stripProps, this.identity);
-    r.drawMesh(this.trees, this.identity);
-    r.drawMesh(this.buildings, this.identity);
-    r.drawMesh(this.clouds, this.identity);
+    for (const [mesh, decal] of [[this.stripBase, 1], [this.stripPaint, 2], [this.stripProps], [this.trees], [this.buildings], [this.clouds]]) r.drawMesh(mesh, this.identity, { decal });
     const wind = this.world.windAt(this.sockPos, time);
     const wspeed = Math.hypot(wind[0], wind[2]);
     const sockHeading = Math.atan2(wind[0], -wind[2]);

@@ -1,5 +1,4 @@
-// Glowing target rings: a torus mesh, placement facing along the course, and the test for whether
-// the aircraft flew through one (crossed its plane, in the right direction, inside the radius).
+// Glowing target rings: torus mesh, course layout facing the next ring, and the fly-through test.
 import { DEG, clamp, dot, length, mat4FromQuatPos, quatFromAttitude, quatRotate, sub } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 

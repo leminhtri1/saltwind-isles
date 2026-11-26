@@ -1,4 +1,4 @@
-// Seeded randomness: a small PRNG and smooth 2D value noise, so the same seed builds the same islands.
+// Seeded PRNG and smooth 2D value noise, so the same seed builds the same islands.
 
 /** Mulberry32: a fast seeded generator returning floats in [0, 1). */
 export function createRandom(seed) {

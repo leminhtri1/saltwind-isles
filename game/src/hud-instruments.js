@@ -1,6 +1,4 @@
-// The backlit instrument panel: airspeed, attitude, altimeter, heading with a waypoint bug,
-// vertical speed and an engine dial, plus throttle, flap, fuel and damage strips and annunciator
-// lights, in metal bezels with lit markings and glass glare.
+// The backlit instrument panel: six gauges, throttle/flap/fuel/damage strips and annunciator lights.
 import { DEG, clamp } from './math3d.js';
 import { MONO, TAU, disc, gradient, line, poly, text } from './canvas-kit.js';
 

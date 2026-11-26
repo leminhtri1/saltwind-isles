@@ -1,6 +1,4 @@
-// Particles that make events readable: crash fireballs, debris and a rising smoke column, splashes,
-// tyre smoke and dust on touchdown, a smoke trail from a damaged engine, sparkles through rings
-// and the coloured smoke flares marking drop zones.
+// Particles that make events readable: fireballs, debris, smoke columns, splashes, tyre smoke, sparkles, flares.
 import { createRandom } from './noise.js';
 
 export class Effects {
@@ -26,7 +24,7 @@ export class Effects {
     const r = () => this.rnd();
     for (let i = 0; i < 40; i++) {
       this.spawn({
-        pos: [...pos], vel: [this.jitter(14), 6 + r() * 16, this.jitter(14)], life: 2 + r() * 2, size: 0.5 + r() * 0.6,
+        pos: [...pos], vel: [this.jitter(14), 6 + r() * 16, this.jitter(14)], life: 2 + r() * 2, size: 0.22 + r() * 0.35,
         color: water ? [0.9, 0.95, 1, 0.9] : [0.12, 0.1, 0.09, 1], kind: 'debris', gravity: 1, drag: 0.4,
       });
     }

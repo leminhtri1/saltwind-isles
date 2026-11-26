@@ -1,5 +1,4 @@
-// A north-up chart of the whole archipelago, painted once from the heightfield, with the strips,
-// the aircraft arrow, the next waypoint, rings and drop zones drawn live on top.
+// North-up chart of the archipelago, painted once from the heightfield, with live aircraft and targets.
 import { STRIPS, WORLD_HALF, stripDirection } from './world-layout.js';
 
 export class Minimap {

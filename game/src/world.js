@@ -1,5 +1,4 @@
-// The world the aircraft flies in: terrain, airstrips, scenery and clouds built once from the seed,
-// plus the questions physics asks of it: what surface lies under a point, and what the wind is doing.
+// The world: terrain, strips, scenery and clouds, plus what surface lies under a point and the wind.
 import { DEG, clamp } from './math3d.js';
 import { createTerrain } from './terrain.js';
 import { buildAirstrips } from './runway.js';

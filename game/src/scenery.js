@@ -1,6 +1,4 @@
-// Everything that stands on the islands: pine and broadleaf trees grown where the forest noise is
-// dense, fishing villages with gabled roofs, Port Saltwind's hangars and tower, and the striped
-// Lantern Point lighthouse. It also files each of them as an obstacle the aircraft can hit.
+// Trees, villages, airfield buildings and the lighthouse, each also filed as an obstacle.
 import { mat4Compose, mat4RotateY, mat4Translate } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 import { createRandom } from './noise.js';

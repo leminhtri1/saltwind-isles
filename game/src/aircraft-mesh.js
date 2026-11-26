@@ -1,6 +1,4 @@
-// The "Kittiwake", a high-wing bush plane built from lofted and boxed parts: lofted fuselage in a
-// cream-red-teal livery, glazed cabin, strut-braced wing with separate ailerons and flaps, tail with
-// moving elevator and rudder, spatted tricycle gear and a propeller that blurs into a disc.
+// The Kittiwake bush plane: lofted fuselage, strut-braced high wing, moving surfaces, spatted gear, propeller.
 import { cross, mat4Compose, mat4RotateX, mat4RotateY, mat4RotateZ, mat4Translate, normalize, sub } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 

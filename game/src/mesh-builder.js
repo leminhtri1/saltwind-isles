@@ -1,6 +1,4 @@
-// Builds flat-shaded triangle meshes on the CPU: each triangle gets its own face normal and an RGBA
-// colour whose alpha is its glow (0 lit by the sun, 1 self-lit). Shapes are placed through a 4x4
-// transform, so the low-poly aircraft, trees and houses are assembled from boxes, cones and lofts.
+// CPU builder for flat-shaded meshes (boxes, frustums, ellipsoids, lofts) with RGBA colour, alpha = glow.
 import { cross, mat4Identity, mat4Multiply, mat4TransformPoint, normalize, sub } from './math3d.js';
 
 export class MeshBuilder {

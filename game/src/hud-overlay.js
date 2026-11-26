@@ -1,6 +1,4 @@
-// The head-up layer over the 3D view: speed and altitude tapes with big SPD / ALT readouts, the
-// heading tape with HDG, the mission card, a waypoint marker with distance (an edge arrow when off
-// screen), the flight-path marker, and flashing warnings and messages.
+// Head-up layer: SPD/ALT tapes, HDG tape, mission card, waypoint marker, flight-path marker, warnings.
 import { clamp, projectToScreen } from './math3d.js';
 import { FONT, MONO, line, panel, poly, shadowText, text } from './canvas-kit.js';
 

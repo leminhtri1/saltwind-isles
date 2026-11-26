@@ -1,5 +1,4 @@
-// A small raw-WebGL2 renderer: compiles the shader programs, uploads meshes into vertex arrays and
-// draws the sky, lit meshes, the sea and batches of camera-facing sprites (glows, smoke, shadows).
+// Raw WebGL2 renderer: shader programs, vertex arrays, sky, lit meshes, sea and sprite batches.
 import { mat4Multiply } from './math3d.js';
 import { LIT_FS, LIT_VS, SKY_FS, SKY_VS, SPRITE_FS, SPRITE_VS, WATER_FS, WATER_VS } from './shaders.js';
 
@@ -46,75 +45,44 @@ export class GLRenderer {
   constructor(canvas) {
     const gl = canvas.getContext('webgl2', { antialias: true, preserveDrawingBuffer: true, alpha: false });
     if (!gl) throw new Error('WebGL2 is not available');
-    this.gl = gl;
-    this.canvas = canvas;
-    this.lit = createProgram(gl, LIT_VS, LIT_FS);
-    this.sky = createProgram(gl, SKY_VS, SKY_FS);
-    this.water = createProgram(gl, WATER_VS, WATER_FS);
-    this.sprite = createProgram(gl, SPRITE_VS, SPRITE_FS);
-    this.skyVao = gl.createVertexArray();
-    gl.bindVertexArray(this.skyVao);
-    const b = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, b);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    this.spriteVao = gl.createVertexArray();
+    Object.assign(this, {
+      gl, canvas, lit: createProgram(gl, LIT_VS, LIT_FS), sky: createProgram(gl, SKY_VS, SKY_FS),
+      water: createProgram(gl, WATER_VS, WATER_FS), sprite: createProgram(gl, SPRITE_VS, SPRITE_FS),
+    });
+    this.skyVao = this.vertexArray([[new Float32Array([-1, -1, 3, -1, -1, 3]), 2]]);
     this.spriteBuf = gl.createBuffer();
-    gl.bindVertexArray(this.spriteVao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.spriteBuf);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 36, 0);
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 36, 12);
-    gl.enableVertexAttribArray(2);
-    gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 36, 20);
-    gl.bindVertexArray(null);
-    this.frame = null;
+    this.spriteVao = this.vertexArray([[this.spriteBuf, 3, 36, 0], [this.spriteBuf, 2, 36, 12], [this.spriteBuf, 4, 36, 20]]);
   }
 
   resize(width, height) {
-    if (this.canvas.width !== width || this.canvas.height !== height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
+    if (this.canvas.width !== width || this.canvas.height !== height) Object.assign(this.canvas, { width, height });
+  }
+
+  /** A vertex array from [data or buffer, size, stride, offset] attributes (locations 0, 1, ...) and optional indices. */
+  vertexArray(attrs, indices) {
+    const gl = this.gl, vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    attrs.forEach(([src, size, stride = 0, offset = 0], i) => {
+      const buf = src instanceof WebGLBuffer ? src : gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      if (buf !== src) gl.bufferData(gl.ARRAY_BUFFER, src, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(i);
+      gl.vertexAttribPointer(i, size, gl.FLOAT, false, stride, offset);
+    });
+    if (indices) {
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
     }
+    gl.bindVertexArray(null);
+    return vao;
   }
 
   uploadMesh(data) {
-    const gl = this.gl;
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    const attrs = [[data.positions, 3], [data.normals, 3], [data.colors, 4]];
-    attrs.forEach(([arr, size], i) => {
-      const buf = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(i);
-      gl.vertexAttribPointer(i, size, gl.FLOAT, false, 0, 0);
-    });
-    gl.bindVertexArray(null);
-    return { vao, count: data.count };
+    return { vao: this.vertexArray([[data.positions, 3], [data.normals, 3], [data.colors, 4]]), count: data.count };
   }
 
   uploadWater(data) {
-    const gl = this.gl;
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-    const pb = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pb);
-    gl.bufferData(gl.ARRAY_BUFFER, data.positions, gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(0);
-    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-    const db = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, db);
-    gl.bufferData(gl.ARRAY_BUFFER, data.depths, gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(1);
-    gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
-    const ib = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indices, gl.STATIC_DRAW);
-    gl.bindVertexArray(null);
-    return { vao, count: data.indices.length };
+    return { vao: this.vertexArray([[data.positions, 3], [data.depths, 1]], data.indices), count: data.indices.length };
   }
 
   /** Start a frame: viewport, clear and the shared camera/sun uniforms. */

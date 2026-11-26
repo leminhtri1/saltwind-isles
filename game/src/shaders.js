@@ -1,5 +1,4 @@
-// GLSL ES 3.0 sources. One shared golden-hour sky function colours the sky dome, the fog that
-// swallows distant islands and the reflections on the sea, so land, water and sky sit in one light.
+// GLSL ES 3.0: one golden-hour sky function shared by the sky, fog and sea reflections.
 
 const COMMON = `
 uniform vec3 uSunDir;

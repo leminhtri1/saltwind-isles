@@ -1,6 +1,4 @@
-// The island heightfield: seeded noise shaped by the hand-placed island blobs, flattened under every
-// airstrip, sampled exactly as its triangles are drawn, and coloured by height and slope into beach,
-// meadow, forest floor, cliff rock and snow.
+// Island heightfield: noise shaped by island blobs, flattened under strips, coloured by height and slope.
 import { clamp, lerp, smoothstep } from './math3d.js';
 import { createNoise2D, fbm } from './noise.js';
 import { MeshBuilder } from './mesh-builder.js';

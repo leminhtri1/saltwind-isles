@@ -1,5 +1,4 @@
-// Full-screen cards over the 3D view: the title with mission select and best medals, the pause
-// card with the controls, and the debrief that explains a crash or grades a sortie.
+// Title with mission select and medals, pause card, and the crash or results debrief.
 import { MISSIONS } from './missions.js';
 import { FONT, SERIF, disc, gradient, panel, poly, ring, text, wrapText } from './canvas-kit.js';
 

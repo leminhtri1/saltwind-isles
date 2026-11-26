@@ -1,5 +1,4 @@
-// Turns a crash record into the debrief a pilot can learn from: what hit what, how fast and at
-// what attitude, and the chain that led there (a stall, an empty tank, a dead engine).
+// Turns a crash record into a debrief: what hit what, how fast, at what attitude, and why.
 
 function attitudeWords(c) {
   if (c.pitch < -25) return 'steep nose-down';

@@ -1,5 +1,4 @@
-// Saltwind Isles: wires the world, renderer, flight model, missions, HUD and audio together and runs
-// the title → flight → debrief loop at a fixed physics step. `?shot=<name>` stages a screenshot.
+// Saltwind Isles entry point: title, flight and debrief loop at a fixed physics step; ?shot=<name> stages a screenshot.
 import { attitudeOf, length } from './math3d.js';
 import { GLRenderer } from './gl-renderer.js';
 import { createWorld } from './world.js';
