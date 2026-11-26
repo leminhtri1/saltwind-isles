@@ -35,7 +35,7 @@ export function drawPause(ctx, W, H) {
 	ctx.fillRect(0, 0, W, H);
 	ctx.save();
 	ctx.setTransform(k, 0, 0, k, (W - 1280 * k) / 2, 0);
-	card(ctx, 240, 300, 800, 200);
+	card(ctx, 190, 300, 900, 200);
 	text(ctx, 'PAUSED', 640, 340, 34, '#ffd36b', 900);
 	text(ctx, KEYS, 640, 400, 14, '#dfe7ec', 600);
 	text(ctx, 'Esc resume   ·   R restart   ·   M sortie board', 640, 450, 17, '#fff', 700);
