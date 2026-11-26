@@ -13,7 +13,6 @@ export function createWorld() {
 	const clouds = buildClouds();
 	const wind = { fromDeg: 250, speed: 3, gust: 0.15 };
 
-	/** Ground under (x, z): height, kind (runway, grass strip, meadow, beach, rock, water) and strip. */
 	function surfaceAt(x, z) {
 		for (const s of STRIPS) {
 			const { along, across } = stripLocal(s, x, z);
@@ -28,7 +27,6 @@ export function createWorld() {
 		return { height: h, kind, strip: null, flat };
 	}
 
-	/** Air-mass velocity at a point (m/s), including gusts that grow near the ground. */
 	function windAt(pos, t) {
 		const dir = (wind.fromDeg + 180) * DEG;
 		const gust = 1 + wind.gust * (Math.sin(t * 0.73 + pos[0] * 0.002) * 0.6 + Math.sin(t * 1.9 + pos[2] * 0.003) * 0.4);

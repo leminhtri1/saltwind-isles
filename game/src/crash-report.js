@@ -8,7 +8,6 @@ function attitudeWords(c) {
 	return 'wings-level';
 }
 
-/** Headline and detail lines for the crash debrief. */
 export function describeCrash(c) {
 	const speed = Math.round(c.speedKmh);
 	const lines = [];

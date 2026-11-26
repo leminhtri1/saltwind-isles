@@ -33,7 +33,6 @@ float vnoise(vec2 p) {
 	vec2 u = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash12(i), hash12(i + vec2(1, 0)), u.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), u.x), u.y);
 }
-// sunlight left after the cumulus overhead: each cloud's footprint cast along the sun onto this point
 float cloudLight(vec3 p) {
 	float lit = 1.0, n = vnoise(p.xz * 0.012) - 0.5;
 	for (int i = 0; i < 40; i++) {
@@ -62,7 +61,6 @@ void main() {
 	gl_Position = uViewProj * w;
 }`;
 
-// uGround > 0 adds the ground's close-up detail: mottled grass, sand ripples and cloud shadows
 export const LIT_FS = `#version 300 es
 precision highp float;
 ${COMMON}
@@ -112,7 +110,6 @@ void main() {
 	vec3 col = dir.y < 0.0 ? fogColor(dir) : skyColor(dir);
 	col += vec3(1.0, 0.97, 0.9) * smoothstep(0.9993, 0.9997, dot(dir, uSunDir)) * 1.4;
 	if (dir.y > 0.0) {
-		// thin high cirrus streaks far above the cumulus
 		vec2 uv = dir.xz / (dir.y + 0.08) * 1.4 + vec2(uTime * 0.003, 0.0);
 		float n = vnoise(uv * vec2(0.9, 6.0)) * 0.65 + vnoise(uv * vec2(2.4, 14.0)) * 0.35;
 		col = mix(col, vec3(1.0), smoothstep(0.6, 0.95, n) * smoothstep(0.05, 0.3, dir.y) * 0.35);
@@ -143,7 +140,6 @@ void main() {
 	float dist = length(uCamPos - vWorld);
 	float t = uTime;
 	vec2 g = vec2(0.0);
-	// octaves of drifting value noise, each faded out before it shimmers into a moire at distance
 	for (int i = 0; i < 4; i++) {
 		float f = 0.011 * pow(2.6, float(i));
 		float fade = clamp(1.0 - dist * f / 45.0, 0.0, 1.0);
@@ -161,7 +157,6 @@ void main() {
 	r.y = abs(r.y);
 	vec3 refl = skyColor(r);
 	float light = cloudLight(vWorld);
-	// sand-white shallows glowing turquoise, deepening through teal to ocean blue
 	float depth = vDepth;
 	vec3 body = mix(vec3(0.36, 0.93, 0.84), vec3(0.0, 0.62, 0.72), smoothstep(0.0, 6.0, depth));
 	body = mix(body, vec3(0.02, 0.24, 0.5), smoothstep(5.0, 34.0, depth));
@@ -189,7 +184,6 @@ void main() {
 	gl_Position = uViewProj * vec4(aPos, 1.0);
 }`;
 
-// uCloud > 0 shades each sprite as a sunlit puff: a sphere normal from the sprite's uv, lit by the sun
 export const SPRITE_FS = `#version 300 es
 precision highp float;
 ${COMMON}

@@ -7,28 +7,23 @@ import { GEAR_HEIGHT } from './aircraft-mesh.js';
 
 export const AIRFRAME = {
 	emptyMass: 800, fuelKgPerLitre: 0.72, maxCargo: 240, wingArea: 16.2, maxThrust: 3300, thrustFadeSpeed: 96, cl0: 0.28, clAlpha: 4.9, flapCl: 0.45,
-	stallAlpha: 15 * DEG, cd0: 0.027, induced: 0.05, flapCd: 0.045, fuelCapacity: 120, neverExceed: 74, flapLimit: 42, maxG: 4.4,
+	stallAlpha: 15 * DEG, cd0: 0.027, induced: 0.05, flapCd: 0.045, fuelCapacity: 120, neverExceed: 74, flapLimit: 46, maxG: 4.4,
 };
 const G = 9.81;
 
-/** All-up mass in kg: airframe and pilot, fuel aboard, cargo. */
-export const massOf = (ac) => AIRFRAME.emptyMass + ac.fuel * AIRFRAME.fuelKgPerLitre + ac.cargo;
-
-/** The worst damage of any system, 0-100. */
-export const worstDamage = (ac) => Math.max(ac.damage, ac.parts.engine, ac.parts.gear, ac.parts.flaps);
+export const worstDamage = (ac) => Math.max(...Object.values(ac.parts));
 
 export function createAircraft({ pos, heading = 0, pitch = 0, bank = 0, speed = 0, throttle = 0, flaps = 0, fuel = 1, cargo = 0, onGround = false } = {}) {
 	const q = quatFromAttitude(heading, pitch, bank);
 	return {
 		pos: [...pos], vel: scale(quatRotate(q, [0, 0, -1]), speed), q, rates: { roll: 0, pitch: 0, yaw: 0 }, throttle, flaps, flapAngle: flaps / 2,
-		brakes: false, fuel: fuel * AIRFRAME.fuelCapacity, cargo, damage: 0, parts: { engine: 0, gear: 0, flaps: 0 }, mass: 0,
+		brakes: false, fuel: fuel * AIRFRAME.fuelCapacity, cargo, parts: { engine: 0, gear: 0, flaps: 0, airframe: 0 }, mass: 0,
 		engineOn: true, onGround, crashed: null, time: 0, alpha: 0, beta: 0,
 		airspeed: speed, gLoad: 1, maxG: 1, stalled: false, stallWarning: false, overspeed: false, rpm: throttle > 0 ? 700 + 1900 * throttle : 0,
 		propAngle: 0, surfaces: { aileron: 0, elevator: 0, rudder: 0 }, lastStall: null, wingDrop: 1, touchdown: null, events: [], refuelling: false,
 	};
 }
 
-/** Freeze the aircraft and record how it hit: speed, sink, attitude, and the stall or failure behind it. */
 function crash(ac, cause, kind) {
 	const att = attitudeOf(ac.q);
 	ac.crashed = {
@@ -38,11 +33,9 @@ function crash(ac, cause, kind) {
 	ac.events.push({ type: 'crash', info: ac.crashed });
 }
 
-/** Damage one system: 'airframe', 'engine', 'gear' or 'flaps'. A seized engine stops; collapsed gear leaves the belly. */
 function addDamage(ac, amount, reason, part = 'airframe') {
 	if (amount <= 0) return;
-	const before = part === 'airframe' ? ac.damage : ac.parts[part], after = Math.min(100, before + amount);
-	if (part === 'airframe') ac.damage = after; else ac.parts[part] = after;
+	const before = ac.parts[part], after = (ac.parts[part] = Math.min(100, before + amount));
 	if (Math.floor(before / 25) !== Math.floor(after / 25)) ac.events.push({ type: 'damage', part, amount: after, reason });
 	if (ac.parts.engine >= 100 && ac.engineOn) {
 		ac.engineOn = false;
@@ -50,18 +43,15 @@ function addDamage(ac, amount, reason, part = 'airframe') {
 	}
 }
 
-/** Stopped on a strip: pump fuel and patch every system a little each second (the mission clock keeps running). */
 export function serviceAircraft(ac, dt) {
 	const p = ac.parts;
 	if (worstDamage(ac) <= 0 && ac.fuel >= AIRFRAME.fuelCapacity) return false;
 	ac.fuel = Math.min(AIRFRAME.fuelCapacity, ac.fuel + 9 * dt);
-	for (const k of ['engine', 'gear', 'flaps']) p[k] = Math.max(0, p[k] - 4 * dt);
-	ac.damage = Math.max(0, ac.damage - 4 * dt);
+	for (const k in p) p[k] = Math.max(0, p[k] - 4 * dt);
 	ac.engineOn = p.engine < 100;
 	return true;
 }
 
-/** Advance the aircraft by dt seconds. `input` holds pitch, roll, yaw in [-1, 1] (nose up, right, right). */
 export function stepAircraft(ac, input, world, dt) {
 	if (ac.crashed) return;
 	const A = AIRFRAME;
@@ -73,12 +63,10 @@ export function stepAircraft(ac, input, world, dt) {
 	const alpha = V > 2 ? Math.atan2(-w, Math.max(u, 0.5)) : 0, beta = V > 2 ? Math.atan2(s, Math.max(u, 0.5)) : 0;
 	Object.assign(ac, { alpha, beta, airspeed: V });
 
-	// flaps travel slowly between notches (0, 1, 2) unless overspeed has jammed them
-	ac.mass = massOf(ac);
+	ac.mass = A.emptyMass + ac.fuel * A.fuelKgPerLitre + ac.cargo;
 	if (ac.parts.flaps < 100) ac.flapAngle += clamp(ac.flaps / 2 - ac.flapAngle, -dt * 0.7, dt * 0.7);
 	const flap = ac.flapAngle;
 
-	// lift and stall
 	const stallAlpha = A.stallAlpha - flap * 1.5 * DEG;
 	const clMax = A.cl0 + flap * A.flapCl + A.clAlpha * stallAlpha;
 	const cl = alpha < stallAlpha ? Math.max(A.cl0 + flap * A.flapCl + A.clAlpha * alpha, -0.9) : clMax * Math.max(0.42, 1 - (alpha - stallAlpha) * 2.6);
@@ -92,9 +80,8 @@ export function stepAircraft(ac, input, world, dt) {
 		ac.events.push({ type: 'stall' });
 	}
 	const qdyn = 0.5 * 1.225 * V * V, qS = qdyn * A.wingArea, airDir = V > 0.1 ? scale(air, 1 / V) : fwd;
-	const lift = qS * cl, cd = A.cd0 + A.induced * cl * cl + flap * A.flapCd + (ac.stalled ? 0.1 : 0) + ac.damage * 0.0004;
+	const lift = qS * cl, cd = A.cd0 + A.induced * cl * cl + flap * A.flapCd + (ac.stalled ? 0.1 : 0) + ac.parts.airframe * 0.0004;
 
-	// engine, propeller and fuel
 	const hasFuel = ac.fuel > 0, running = hasFuel && ac.engineOn;
 	let power = running ? ac.throttle * (1 - ac.parts.engine / 250) : 0;
 	if (running && ac.parts.engine > 55) power *= 0.8 + 0.2 * Math.sin(ac.time * 7.3) * Math.sin(ac.time * 2.1);
@@ -104,24 +91,18 @@ export function stepAircraft(ac, input, world, dt) {
 	if (running) ac.fuel = Math.max(0, ac.fuel - (0.012 + 0.2 * power) * dt);
 	if (hasFuel && ac.fuel <= 0) ac.events.push({ type: 'fuel-out' });
 
-	// lift across the airflow, drag along it, side force from sideslip, thrust along the nose, weight
 	const M = ac.mass, F = [0, -M * G, 0];
 	for (const [dir, mag] of [[normalize(cross(right, airDir)), lift], [airDir, -qS * cd], [right, -qdyn * 2.4 * beta], [fwd, thrust]]) {
 		for (let i = 0; i < 3; i++) F[i] += dir[i] * mag;
 	}
 	ac.gLoad = (dot(F, up) + M * G * up[1]) / (M * G);
 
-	// control response: rate targets scaled by airspeed, prop wash, and stability toward the airflow
-	const eff = clamp(V / 30, 0, 1.25), wash = running ? ac.throttle * 0.32 : 0, authority = ac.damage > 80 ? 0.65 : 1;
-	// hands off, the nose settles where the wing makes one g: the flight path holds until the pilot
-	// pulls (turns need back pressure) or the speed decays toward the stall
+	const eff = clamp(V / 30, 0, 1.25), wash = running ? ac.throttle * 0.32 : 0, authority = ac.parts.airframe > 80 ? 0.65 : 1;
 	const bankNow = Math.atan2(-right[1], up[1]);
 	const needCl = qS > 40 ? (M * G) / (qS * Math.max(0.5, Math.cos(bankNow))) : 3;
 	const trimAlpha = ac.onGround ? 0.03 : clamp((needCl - A.cl0 - flap * A.flapCl) / A.clAlpha, -0.06, stallAlpha - 2.5 * DEG);
 	let rollT = input.roll * 1.35 * eff * authority;
 	if (Math.abs(bankNow) < 0.6 && !input.roll) rollT -= bankNow * 0.25 * eff; // gentle dihedral
-	// the stick commands angle of attack around that trim: full back pulls about 3 g at cruise, but at
-	// low speed the trim already sits near the stall and full back goes past it
 	const wantAlpha = trimAlpha + input.pitch * (input.pitch > 0 ? 0.2 : 0.22) * authority;
 	let pitchT = (wantAlpha - alpha) * 3.2 * eff + input.pitch * wash * 0.45;
 	const yawT = input.yaw * 0.55 * (eff + wash) + beta * 2.3 * eff;
@@ -135,13 +116,11 @@ export function stepAircraft(ac, input, world, dt) {
 	R.yaw += (yawT - R.yaw) * damp(4, dt);
 	for (const [k, v] of [['aileron', input.roll], ['elevator', input.pitch], ['rudder', input.yaw]]) S[k] += (v - S[k]) * damp(10, dt);
 
-	// integrate
 	ac.vel = madd(ac.vel, F, dt / M);
 	ac.pos = madd(ac.pos, ac.vel, dt);
 	const omega = [R.pitch, -R.yaw, -R.roll], mag = length(omega);
 	if (mag > 1e-6) ac.q = quatNormalize(quatMul(ac.q, quatAxisAngle(scale(omega, 1 / mag), mag * dt)));
 
-	// structural limits
 	ac.overspeed = V > A.neverExceed || (flap > 0.1 && V > A.flapLimit);
 	if (V > A.neverExceed) {
 		addDamage(ac, (V - A.neverExceed) * 1.1 * dt, 'overspeed');
@@ -207,12 +186,10 @@ function groundContact(ac, input, world, dt, lift) {
 	}
 	ac.onGround = true;
 
-	// sit on the wheels, keep wings level, nose between the nose wheel and full rotation
 	if (wheelY < groundY) ac.pos[1] += groundY - wheelY;
 	if (ac.vel[1] < 0) ac.vel[1] = 0;
 	let heading = att.heading;
 	const vf = dot(ac.vel, [Math.sin(heading), 0, -Math.cos(heading)]);
-	// a bent gear leg pulls the nose to one side as the speed builds
 	const pull = ac.parts.gear > 30 && ac.parts.gear < 100 ? ac.parts.gear / 400 : 0;
 	const steer = (input.yaw + input.roll * 0.6 + pull) * 0.7 * clamp(Math.abs(vf) / 5, 0, 1) * clamp(1.5 - Math.abs(vf) / 35, 0.3, 1);
 	heading += steer * dt * Math.sign(vf || 1);
@@ -221,7 +198,6 @@ function groundContact(ac, input, world, dt, lift) {
 	ac.rates.yaw = 0;
 	if (att.pitch <= 0 && ac.rates.pitch < 0) ac.rates.pitch = 0;
 
-	// tyres: grip sideways, roll forwards, brake
 	const f2 = [Math.sin(heading), 0, -Math.cos(heading)], s2 = [Math.cos(heading), 0, Math.sin(heading)];
 	let along = dot(ac.vel, f2);
 	const sideV = dot(ac.vel, s2) * Math.exp(-dt * 9);

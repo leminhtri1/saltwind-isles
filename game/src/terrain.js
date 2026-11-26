@@ -24,7 +24,6 @@ export function createTerrain(seed = WORLD_SEED) {
 	const N = TERRAIN_CELLS;
 	const cell = (WORLD_HALF * 2) / N;
 
-	/** Forest density in [0, 1]: where trees cluster and the ground darkens. */
 	const forestAt = (x, z) => clamp(fbm(detail, x / 420 + 40, z / 420 - 13, 3) * 1.8 + 0.2, 0, 1);
 
 	function shapedHeight(x, z) {
@@ -67,7 +66,6 @@ export function createTerrain(seed = WORLD_SEED) {
 
 	const at = (i, j) => heights[clamp(j, 0, N) * size + clamp(i, 0, N)];
 
-	/** Height of the drawn surface at (x, z), interpolated on the same triangles the mesh uses. */
 	function heightAt(x, z) {
 		const gx = (x + WORLD_HALF) / cell, gz = (z + WORLD_HALF) / cell;
 		if (gx < 0 || gz < 0 || gx >= N || gz >= N) return SEA_FLOOR;
@@ -78,7 +76,6 @@ export function createTerrain(seed = WORLD_SEED) {
 		return h00 + (h11 - h01) * fx + (h01 - h00) * fz;
 	}
 
-	/** Surface normal's vertical part (1 flat, 0 a cliff) at (x, z). */
 	function flatnessAt(x, z) {
 		const e = cell * 0.5;
 		const dx = heightAt(x + e, z) - heightAt(x - e, z);
@@ -86,7 +83,6 @@ export function createTerrain(seed = WORLD_SEED) {
 		return 2 * e / Math.hypot(dx, 2 * e, dz);
 	}
 
-	/** Patchwork crop field colour near a village, or null outside the farmland. */
 	function fieldAt(x, z) {
 		const v = VILLAGES.find((vv) => Math.hypot(x - vv.x, z - vv.z) < vv.spread * 2.6);
 		if (!v || forestAt(x, z) > 0.55) return null;
@@ -110,7 +106,6 @@ export function createTerrain(seed = WORLD_SEED) {
 			if (h > 200) c = lerp3(c, COLORS.rock, smoothstep(200, 300, h) * 0.7);
 			if (h < 4.5) c = lerp3(c, COLORS.sand, 0.4);
 		}
-		// hollows and gullies fall into shade, ridges catch a little more sky
 		const k = (1 + (jitter - 0.5) * 0.09) * clamp(1 - hollow * 0.018, 0.7, 1.08);
 		return [c[0] * k, c[1] * k, c[2] * k, 0];
 	}
@@ -141,7 +136,6 @@ export function createTerrain(seed = WORLD_SEED) {
 		return mb.build();
 	}
 
-	/** Water grid with each vertex's depth, for shallows, foam and the deep blue beyond. */
 	function buildWaterGrid(step = 2) {
 		const n = N / step;
 		const positions = [], depths = [], indices = [];
@@ -158,7 +152,6 @@ export function createTerrain(seed = WORLD_SEED) {
 				indices.push(a, c, d, a, d, b);
 			}
 		}
-		// A wide skirt of deep sea out to the horizon.
 		const far = 60000, base = positions.length / 3;
 		const ring = [[-far, -far], [far, -far], [far, far], [-far, far]];
 		const inner = [[-WORLD_HALF, -WORLD_HALF], [WORLD_HALF, -WORLD_HALF], [WORLD_HALF, WORLD_HALF], [-WORLD_HALF, WORLD_HALF]];

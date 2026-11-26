@@ -24,7 +24,6 @@ function createProgram(gl, vs, fs) {
 	return { p, loc };
 }
 
-/** Collects camera-facing quads and arbitrary flat quads into one dynamic vertex buffer. */
 export class SpriteBatch {
 	constructor() { this.data = []; }
 	clear() { this.data.length = 0; }
@@ -58,7 +57,6 @@ export class GLRenderer {
 		if (this.canvas.width !== width || this.canvas.height !== height) Object.assign(this.canvas, { width, height });
 	}
 
-	/** A vertex array from [data or buffer, size, stride, offset] attributes (locations 0, 1, ...) and optional indices. */
 	vertexArray(attrs, indices) {
 		const gl = this.gl, vao = gl.createVertexArray();
 		gl.bindVertexArray(vao);
@@ -85,11 +83,9 @@ export class GLRenderer {
 		return { vao: this.vertexArray([[data.positions, 3], [data.depths, 1]], data.indices), count: data.indices.length };
 	}
 
-	/** Start a frame: viewport, clear and the shared camera/sun uniforms. */
 	beginFrame({ view, proj, camPos, sunDir, time, fogDensity, clouds }) {
 		const gl = this.gl;
 		const viewProj = mat4Multiply(proj, view);
-		// the sky rebuilds each pixel's view ray from the camera basis and the lens
 		const basis = [view[0], view[4], view[8], view[1], view[5], view[9], -view[2], -view[6], -view[10]];
 		this.frame = { viewProj, camPos, sunDir, time, fogDensity, clouds, basis, lens: [1 / proj[0], 1 / proj[5]], right: basis.slice(0, 3), up: basis.slice(3, 6) };
 		gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -125,7 +121,6 @@ export class GLRenderer {
 		gl.enable(gl.DEPTH_TEST);
 	}
 
-	/** Draw a lit mesh. Options: alpha (blended when < 1), tint, decal (polygon offset level), ground detail. */
 	drawMesh(mesh, model, { alpha = 1, tint = [1, 1, 1], decal = 0, ground = false } = {}) {
 		if (!mesh || !mesh.count) return;
 		const gl = this.gl;
@@ -159,7 +154,6 @@ export class GLRenderer {
 		gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_INT, 0);
 	}
 
-	/** Draw a sprite batch: additive glows, alpha-blended puffs, or sunlit cloud puffs. */
 	drawSprites(batch, { additive = false, softness = 1.5, fogged = false, cloud = false } = {}) {
 		if (!batch.count) return;
 		const gl = this.gl;

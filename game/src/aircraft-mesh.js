@@ -10,10 +10,8 @@ const DARK = [0.13, 0.13, 0.14, 0];
 const METAL = [0.6, 0.62, 0.64, 0];
 const TIRE = [0.08, 0.08, 0.09, 0];
 
-/** Wheels touch the ground this far below the centre of gravity. */
 export const GEAR_HEIGHT = 1.35;
 
-/** Hinge points (body frame) of the moving parts. */
 export const HINGES = {
 	wingTrailing: { y: 1.2, z: -0.08 },
 	elevator: { y: 0.62, z: 3.45 },
@@ -21,7 +19,6 @@ export const HINGES = {
 	prop: { y: 0.05, z: -3.5 },
 };
 
-/** Navigation lights (body frame): red port tip, green starboard tip, white tail; the fin beacon flashes. */
 export const NAV_LIGHTS = [
 	{ p: [-5.62, 1.22, -0.7], c: [1, 0.12, 0.08] }, { p: [5.62, 1.22, -0.7], c: [0.1, 1, 0.3] },
 	{ p: [0, 0.66, 4.0], c: [1, 1, 1] }, { p: [0, 2.2, 3.3], c: [1, 0.2, 0.1], flash: true },
@@ -45,10 +42,8 @@ function wheel(mb, x, y, z, r, w) {
 	mb.pop();
 }
 
-/** A tapered wing panel from x0 to x1 (span), chord from zf (leading edge) to zt (trailing). */
 function panel(mb, x0, x1, zf, zt, y, t, top, bottom = top) {
 	const yb = y - t / 2, yt = y + t / 2, zm = zf + (zt - zf) * 0.3;
-	// airfoil-ish: thick near the front, thin at the trailing edge
 	mb.quad([x0, yt, zm], [x1, yt, zm], [x1, yt - t * 0.2, zf], [x0, yt - t * 0.2, zf], top);
 	mb.quad([x0, y + t * 0.1, zt], [x1, y + t * 0.1, zt], [x1, yt, zm], [x0, yt, zm], top);
 	mb.quad([x0, yt - t * 0.2, zf], [x1, yt - t * 0.2, zf], [x1, yb, zm], [x0, yb, zm], bottom);
@@ -62,7 +57,6 @@ function panel(mb, x0, x1, zf, zt, y, t, top, bottom = top) {
 
 function buildBody() {
 	const mb = new MeshBuilder();
-	// octagon faces from upper right round the top to lower right: red spine, cream flanks, red cheatline and belly
 	const side = (glass) => [CREAM, RED, RED, CREAM, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
 	const front = (k) => (k === 1 || k === 2 ? GLASS : k === 4 || k === 7 ? RED : k === 5 || k === 6 ? TEAL : CREAM);
 	mb.loft([
@@ -76,7 +70,6 @@ function buildBody() {
 		{ z: 3.3, w: 0.18, h: 0.26, y: 0.58, color: CREAM, colors: side(false) },
 		{ z: 3.95, w: 0.08, h: 0.14, y: 0.62, color: RED },
 	]);
-	// exhaust stacks, cowl louvres, oil-cooler scoop, door seams and a step
 	for (const s of [-1, 1]) mb.box(s * 0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
 	for (let k = 0; k < 4; k++) mb.box(0, 0.63, -2.75 + k * 0.17, 0.42, 0.03, 0.06, DARK);
 	mb.box(0, -0.5, -2.65, 0.36, 0.14, 0.4, DARK);
@@ -85,7 +78,6 @@ function buildBody() {
 		mb.box(s * 0.63, 0.32, -1.02, 0.02, 0.9, 0.025, DARK);
 		mb.box(s * 0.7, -0.45, -0.75, 0.25, 0.04, 0.16, METAL);
 	}
-	// wing: main panels and red tips
 	const wy = 1.22;
 	const UNDER = [0.84, 0.8, 0.72, 0];
 	panel(mb, -5.6, -4.5, -1.35, -0.08, wy, 0.2, RED);
@@ -95,17 +87,13 @@ function buildBody() {
 	panel(mb, 3.9, 4.2, -1.35, -0.08, wy, 0.2, RED);
 	panel(mb, 4.2, 4.5, -1.35, -0.08, wy, 0.2, CREAM, UNDER);
 	panel(mb, 4.5, 5.6, -1.35, -0.08, wy, 0.2, RED);
-	// wing root fairing over the cabin and fuel caps
 	mb.box(0, wy + 0.06, -0.7, 1.3, 0.1, 1.1, CREAM);
 	for (const s of [-1, 1]) mb.box(s * 1.6, wy + 0.11, -0.8, 0.14, 0.03, 0.14, DARK);
-	// fixed trailing strip beside the fuselage
 	panel(mb, -0.7, 0.7, -0.08, 0.35, wy, 0.08, CREAM);
-	// struts
 	beam(mb, [2.6, wy - 0.1, -0.55], [0.58, -0.32, -0.55], 0.05, METAL);
 	beam(mb, [-2.6, wy - 0.1, -0.55], [-0.58, -0.32, -0.55], 0.05, METAL);
 	beam(mb, [2.4, wy - 0.1, -0.15], [0.58, -0.3, -0.2], 0.04, METAL);
 	beam(mb, [-2.4, wy - 0.1, -0.15], [-0.58, -0.3, -0.2], 0.04, METAL);
-	// horizontal tail and fin
 	panel(mb, -1.9, 1.9, 2.75, 3.45, 0.62, 0.1, CREAM);
 	for (const x of [0.012, -0.012]) {
 		const q = x > 0 ? (a, b, c, d, col) => mb.quad(a, b, c, d, col) : (a, b, c, d, col) => mb.quad(a, d, c, b, col);
@@ -113,14 +101,12 @@ function buildBody() {
 		q([x, 1.42, 2.75], [x, 1.45, 3.5], [x, 1.62, 3.5], [x, 1.6, 2.85], CREAM);
 		q([x, 1.6, 2.85], [x, 1.62, 3.5], [x, 2.15, 3.5], [x, 2.1, 3.05], RED);
 	}
-	// spinner
 	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
 	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
 	mb.pop();
 	return mb.build();
 }
 
-/** Spring-steel main legs with spatted wheels and the nose leg: drawn apart so a collapse can remove them. */
 function buildGear() {
 	const mb = new MeshBuilder();
 	for (const s of [-1, 1]) {
@@ -175,7 +161,6 @@ function buildDisc() {
 	return mb.build();
 }
 
-/** All the aircraft's meshes (untransformed, body frame). */
 export function buildAircraftMeshes() {
 	const wy = 1.22, zf = -0.08, zt = 0.38;
 	return {

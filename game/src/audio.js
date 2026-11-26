@@ -13,7 +13,6 @@ export class FlightAudio {
 		return n;
 	}
 
-	/** Build the graph on the first user gesture (browsers require one). */
 	start() {
 		if (this.ctx) return void (this.ctx.state === 'suspended' && this.ctx.resume());
 		const AC = window.AudioContext || window.webkitAudioContext;
@@ -21,25 +20,21 @@ export class FlightAudio {
 		const ctx = (this.ctx = new AC());
 		const N = this.node.bind(this);
 		this.master = N(ctx.createGain(), { gain: 0.5 }, ctx.destination);
-		// engine: sawtooth and square an octave apart, through a low-pass that opens with RPM
 		this.engineGain = N(ctx.createGain(), { gain: 0 }, this.master);
 		this.engineFilter = N(ctx.createBiquadFilter(), { type: 'lowpass', frequency: 600 }, this.engineGain);
 		this.osc1 = N(ctx.createOscillator(), { type: 'sawtooth' }, this.engineFilter);
 		this.osc2 = N(ctx.createOscillator(), { type: 'square' }, N(ctx.createGain(), { gain: 0.35 }, this.engineFilter));
-		// wind: looping seeded noise through a band-pass
 		const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), data = buf.getChannelData(0);
 		for (let i = 0, seed = 1; i < len; i++) data[i] = ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
 		this.noise = buf;
 		this.windGain = N(ctx.createGain(), { gain: 0 }, this.master);
 		this.windFilter = N(ctx.createBiquadFilter(), { type: 'bandpass', Q: 0.6 }, this.windGain);
 		const wind = N(ctx.createBufferSource(), { buffer: buf, loop: true }, this.windFilter);
-		// stall horn
 		this.hornGain = N(ctx.createGain(), { gain: 0 }, this.master);
 		this.horn = N(ctx.createOscillator(), { type: 'square', frequency: 520 }, N(ctx.createBiquadFilter(), { type: 'lowpass', frequency: 1400 }, this.hornGain));
 		for (const s of [this.osc1, this.osc2, wind, this.horn]) s.start();
 	}
 
-	/** Follow the aircraft each frame. */
 	update(ac, active) {
 		if (!this.ctx) return;
 		const t = this.ctx.currentTime, set = (p, v, k) => p.setTargetAtTime(v, t, k);
@@ -53,7 +48,6 @@ export class FlightAudio {
 		set(this.hornGain.gain, on && ac.stallWarning ? 0.08 : 0, 0.03);
 	}
 
-	/** A decaying burst of filtered noise (tyres, thuds, crashes). */
 	burst(duration, freq, gain, q = 1) {
 		const ctx = this.ctx, t = ctx.currentTime;
 		const g = this.node(ctx.createGain(), {}, this.master);
@@ -64,7 +58,6 @@ export class FlightAudio {
 		src.stop(t + duration);
 	}
 
-	/** A short enveloped tone (chimes and warnings). */
 	tone(freq, start, duration, gain, type = 'sine') {
 		const ctx = this.ctx, t = ctx.currentTime + start;
 		const g = this.node(ctx.createGain(), {}, this.master);

@@ -43,7 +43,6 @@ export function text(ctx, t, x, y, px, color = '#fff', weight = 600, font = FONT
 	ctx.fillText(t, x, y);
 }
 
-/** Text with a soft dark halo so it reads over bright sky and sea. */
 export function shadowText(ctx, t, x, y, px, color, weight = 700, font = FONT, align = 'center', baseline = 'middle') {
 	ctx.shadowColor = 'rgba(0,0,0,0.75)';
 	ctx.shadowBlur = 4;
@@ -68,7 +67,6 @@ export function panel(ctx, x, y, w, h, r, fill, stroke, width = 1.5) {
 	}
 }
 
-/** Break `t` into lines no wider than `maxW` in the current font. */
 export function wrapText(ctx, t, maxW) {
 	const lines = [];
 	let cur = '';

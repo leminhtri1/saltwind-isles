@@ -19,7 +19,6 @@ export class Effects {
 
 	jitter(s) { return (this.rnd() * 2 - 1) * s; }
 
-	/** A fireball, flying debris and a smoke column that keeps rising. */
 	crash(pos, water) {
 		const r = () => this.rnd();
 		for (let i = 0; i < 40; i++) {
@@ -88,7 +87,6 @@ export class Effects {
 		this.parts = this.parts.filter((p) => p.age < p.life);
 	}
 
-	/** Fill the smoke (alpha) and glow (additive) sprite batches. */
 	draw(smoke, glow, debris, right, up) {
 		for (const p of this.parts) {
 			const t = p.age / p.life;

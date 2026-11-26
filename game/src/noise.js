@@ -1,6 +1,5 @@
 // Seeded PRNG and smooth 2D value noise, so the same seed builds the same islands.
 
-/** Mulberry32: a fast seeded generator returning floats in [0, 1). */
 export function createRandom(seed) {
 	let a = seed >>> 0;
 	return function random() {
@@ -18,7 +17,6 @@ function hash2(ix, iy, seed) {
 	return (h & 0xffffff) / 0x1000000;
 }
 
-/** Value noise in [-1, 1] with smooth interpolation between integer lattice points. */
 export function createNoise2D(seed) {
 	return function noise(x, y) {
 		const ix = Math.floor(x), iy = Math.floor(y);
@@ -31,7 +29,6 @@ export function createNoise2D(seed) {
 	};
 }
 
-/** Fractal sum of octaves of a noise function. */
 export function fbm(noise, x, y, octaves = 4, lacunarity = 2.03, gain = 0.5) {
 	let sum = 0, amp = 1, freq = 1, norm = 0;
 	for (let i = 0; i < octaves; i++) {

@@ -17,7 +17,6 @@ export class MeshBuilder {
 		return this;
 	}
 
-	/** A triangle in local space (counter-clockwise seen from its front), coloured [r, g, b, glow]. */
 	tri(a, b, c, color) {
 		const m = this.matrix;
 		this.triWorld(mat4TransformPoint(m, a), mat4TransformPoint(m, b), mat4TransformPoint(m, c), color);
@@ -37,7 +36,6 @@ export class MeshBuilder {
 		this.tri(a, c, d, color);
 	}
 
-	/** Axis-aligned box centred at (x, y, z) with full sizes (sx, sy, sz). */
 	box(x, y, z, sx, sy, sz, color, topColor = color) {
 		const x0 = x - sx / 2, x1 = x + sx / 2, y0 = y - sy / 2, y1 = y + sy / 2, z0 = z - sz / 2, z1 = z + sz / 2;
 		this.quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], topColor); // top
@@ -49,7 +47,6 @@ export class MeshBuilder {
 		return this;
 	}
 
-	/** Upright frustum (cylinder or cone) on the Y axis from y0 to y1. */
 	frustum(x, y0, z, r0, y1, r1, sides, color, capColor = color) {
 		for (let i = 0; i < sides; i++) {
 			const a0 = (i / sides) * Math.PI * 2, a1 = ((i + 1) / sides) * Math.PI * 2;
@@ -64,7 +61,6 @@ export class MeshBuilder {
 		return this;
 	}
 
-	/** Low-poly ellipsoid (latitude/longitude) centred at (x, y, z). */
 	blob(x, y, z, rx, ry, rz, color, rings = 4, sides = 7, bottomColor = color) {
 		const pt = (i, j) => {
 			const v = (i / rings) * Math.PI, u = (j / sides) * Math.PI * 2;
@@ -82,10 +78,6 @@ export class MeshBuilder {
 		return this;
 	}
 
-	/**
-	 * A loft along -Z through cross-sections {z, w, h, y, color}: each section is an octagon of
-	 * half-width w and half-height h centred at height y. Ends are capped.
-	 */
 	loft(sections) {
 		const ring = (s) => {
 			const pts = [];
@@ -112,7 +104,6 @@ export class MeshBuilder {
 		return this;
 	}
 
-	/** Typed arrays ready for upload. */
 	build() {
 		return {
 			positions: new Float32Array(this.positions),

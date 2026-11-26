@@ -21,13 +21,11 @@ export function buildRingMesh() {
 	return mb.build();
 }
 
-/** A ring at `pos`, its opening facing along heading/pitch (degrees). */
 export function makeRing(pos, headingDeg, pitchDeg = 0) {
 	const q = quatFromAttitude(headingDeg * DEG, clamp(pitchDeg, -20, 20) * DEG, 0);
 	return { pos, q, normal: quatRotate(q, [0, 0, -1]), model: mat4FromQuatPos(q, pos), passed: false, missed: false };
 }
 
-/** Rings for a course through anchor points [{x, z, agl}], each facing the next. */
 export function layRingCourse(anchors, groundAt) {
 	const pts = anchors.map((a) => [a.x, Math.max(0, groundAt(a.x, a.z)) + a.agl, a.z]);
 	return pts.map((p, i) => {
@@ -39,7 +37,6 @@ export function layRingCourse(anchors, groundAt) {
 	});
 }
 
-/** 'pass' when the segment prev→pos goes through the ring, 'miss' when it crosses its plane outside, else null. */
 export function ringCrossing(ring, prev, pos) {
 	const d0 = dot(sub(prev, ring.pos), ring.normal), d1 = dot(sub(pos, ring.pos), ring.normal);
 	if (!(d0 < 0 && d1 >= 0)) return null;

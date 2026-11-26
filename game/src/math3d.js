@@ -7,7 +7,6 @@ export const smoothstep = (e0, e1, x) => {
 	const t = clamp((x - e0) / (e1 - e0), 0, 1);
 	return t * t * (3 - 2 * t);
 };
-/** Frame-rate independent smoothing factor for a rate of `k` per second. */
 export const damp = (k, dt) => 1 - Math.exp(-k * dt);
 
 export const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -23,7 +22,6 @@ export function normalize(a) {
 	return l > 1e-9 ? [a[0] / l, a[1] / l, a[2] / l] : [0, 0, 0];
 }
 
-// ---- quaternions [x, y, z, w] ----
 export function quatAxisAngle(axis, angle) {
 	const s = Math.sin(angle / 2);
 	return [axis[0] * s, axis[1] * s, axis[2] * s, Math.cos(angle / 2)];
@@ -47,14 +45,12 @@ export function quatRotate(q, v) {
 	const tz = 2 * (x * v[1] - y * v[0]);
 	return [v[0] + w * tx + (y * tz - z * ty), v[1] + w * ty + (z * tx - x * tz), v[2] + w * tz + (x * ty - y * tx)];
 }
-/** Orientation from heading (clockwise from north), pitch (nose up +) and bank (right wing down +), radians. */
 export function quatFromAttitude(heading, pitch, bank) {
 	const qy = quatAxisAngle([0, 1, 0], -heading);
 	const qp = quatAxisAngle([1, 0, 0], pitch);
 	const qr = quatAxisAngle([0, 0, 1], -bank);
 	return quatNormalize(quatMul(quatMul(qy, qp), qr));
 }
-/** Heading, pitch and bank (radians) of an orientation. */
 export function attitudeOf(q) {
 	const f = quatRotate(q, [0, 0, -1]);
 	const r = quatRotate(q, [1, 0, 0]);
@@ -64,7 +60,6 @@ export function attitudeOf(q) {
 	return { heading, pitch: Math.asin(clamp(f[1], -1, 1)), bank: Math.atan2(-r[1], u[1]) };
 }
 
-// ---- 4x4 matrices ----
 export function mat4Identity() {
 	const m = new Float32Array(16);
 	m[0] = m[5] = m[10] = m[15] = 1;
@@ -135,7 +130,6 @@ export function mat4RotateZ(a) {
 	m[0] = c; m[1] = s; m[4] = -s; m[5] = c;
 	return m;
 }
-/** Compose a list of matrices left to right: compose(A, B, C) = A*B*C. */
 export function mat4Compose(...ms) {
 	return ms.reduce((acc, m) => mat4Multiply(acc, m));
 }
@@ -146,7 +140,6 @@ export function mat4TransformPoint(m, p) {
 		m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14],
 	];
 }
-/** Project a world point to canvas pixels; null when behind the camera. */
 export function projectToScreen(viewProj, p, width, height) {
 	const x = viewProj[0] * p[0] + viewProj[4] * p[1] + viewProj[8] * p[2] + viewProj[12];
 	const y = viewProj[1] * p[0] + viewProj[5] * p[1] + viewProj[9] * p[2] + viewProj[13];

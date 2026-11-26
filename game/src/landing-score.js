@@ -14,10 +14,6 @@ export function sinkRating(vs) {
 	return { label: 'Very hard', points: 0 };
 }
 
-/**
- * Score a touchdown on strip `stripId` landing in direction `sign` (+1 along the strip heading).
- * `zone` is the [near, far] touchdown band in metres from the threshold.
- */
 export function scoreLanding(td, stripId, sign, zone, stoppedOnStrip) {
 	const strip = findStrip(stripId);
 	const lines = [];

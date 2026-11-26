@@ -2,7 +2,6 @@
 import { DEG } from './math3d.js';
 import { VILLAGES, findStrip, stripDirection } from './world-layout.js';
 
-// Each mission: its goal, the wind, the default fuel (litres), and the cargo the pilot may trade against fuel.
 export const MISSIONS = [
 	{
 		id: 'approach', title: 'Harbour Approach', kind: 'landing', strip: 'port', sign: -1, zone: [150, 450], aim: 300, gate: 480,
@@ -49,7 +48,6 @@ export const RING_ANCHORS = [
 	{ x: -150, z: -350, agl: 80 }, { x: 350, z: 330, agl: 45 },
 ];
 
-/** Landing threshold position and unit approach direction for a strip and landing sense. */
 export function approachGeometry(stripId, sign) {
 	const s = findStrip(stripId);
 	const d0 = stripDirection(s);
@@ -59,13 +57,11 @@ export function approachGeometry(stripId, sign) {
 	return { strip: s, dir: d, threshold, heading };
 }
 
-/** A point `dist` metres before the threshold on a 3.2° glide path aimed `aim` metres beyond it. */
 export function glidePathPoint(geo, dist, aim) {
 	const h = geo.strip.elev + (dist + aim) * Math.tan(3.2 * DEG) + 2;
 	return [geo.threshold[0] - geo.dir[0] * dist, h, geo.threshold[2] - geo.dir[2] * dist];
 }
 
-/** The route a mission flies, as world points [x, z] for the briefing chart, with the marks to draw on it. */
 export function routeOf(def) {
 	const strip = (id) => { const s = findStrip(id); return [s.x, s.z]; };
 	if (def.kind === 'rings') return { path: RING_ANCHORS.map((a) => [a.x, a.z]), marks: 'rings' };

@@ -44,10 +44,8 @@ export class Controls {
 
 	down(name) { return KEYS[name].some((c) => this.keys.has(c)) ? 1 : 0; }
 
-	/** True once per key press. */
 	consume(code) { return this.pressed.delete(code); }
 
-	/** Update the smoothed stick and rudder; returns the pilot's inputs for this frame. */
 	sample(dt) {
 		const flip = this.invertPitch ? -1 : 1;
 		const ramp = (v, t) => {

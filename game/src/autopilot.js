@@ -3,7 +3,6 @@ import { attitudeOf } from './math3d.js';
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 
-/** Stick input for one step toward `geo`'s threshold: it flares at `flareAgl` to meet the runway at `sink` m/s, aiming `offset` m right of the line. */
 export function landingAutopilot(ac, geo, { flareAgl = 6, sink = 0.6, offset = 0, targetSpeed = 32 } = {}) {
 	const d = geo.dir, rel = [ac.pos[0] - geo.threshold[0], ac.pos[2] - geo.threshold[2]];
 	const along = -(rel[0] * d[0] + rel[1] * d[2]), cross = rel[0] * -d[2] + rel[1] * d[0] - offset;

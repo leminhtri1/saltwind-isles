@@ -21,31 +21,19 @@ import { findStrip, stripDirection } from './world-layout.js';
 import { stageShot } from './shots.js';
 import { adjustLoadout, defaultLoadout } from './loadout.js';
 
-const STEP = 1 / 120;
-const IDLE = { pitch: 0, roll: 0, yaw: 0 };
-const hudCanvas = document.getElementById('hud');
-const hud = hudCanvas.getContext('2d');
+const STEP = 1 / 120, IDLE = { pitch: 0, roll: 0, yaw: 0 };
+const hudCanvas = document.getElementById('hud'), hud = hudCanvas.getContext('2d');
 const shotName = new URLSearchParams(location.search).get('shot');
-const renderer = new GLRenderer(document.getElementById('view'));
-const world = createWorld();
-const scene = new SceneRenderer(renderer, world);
-const minimap = new Minimap(world);
-const controls = new Controls(hudCanvas);
-const camera = new FlightCamera();
-const effects = new Effects();
-const audio = new FlightAudio();
+const renderer = new GLRenderer(document.getElementById('view')), world = createWorld(), scene = new SceneRenderer(renderer, world);
+const minimap = new Minimap(world), controls = new Controls(hudCanvas), camera = new FlightCamera(), effects = new Effects(), audio = new FlightAudio();
 
 const loadBest = () => { try { return JSON.parse(localStorage.getItem('saltwind-best') || '{}'); } catch { return {}; } };
 const game = { state: 'title', selected: 0, missionIndex: 0, run: null, ac: null, best: shotName ? {} : loadBest(), message: null, time: 0, report: null, endTimer: 0, accumulator: 0, titleRows: [], loadouts: {} };
-/** The pilot's chosen fuel and cargo for a mission, starting from its default. */
 const loadoutFor = (def) => (game.loadouts[def.id] ||= defaultLoadout(def));
 
-/** The Kittiwake parked beside Port Saltwind's runway, idling behind the title screen. */
 function parkedAircraft() {
 	const port = findStrip('port'), d = stripDirection(port);
-	const ac = createAircraft({ pos: [port.x - d[0] * 120 + d[2] * 24, port.elev + 1.35, port.z - d[2] * 120 - d[0] * 24], heading: (port.heading + 160) * Math.PI / 180, onGround: true, throttle: 0.05 });
-	ac.rpm = 800;
-	return ac;
+	return createAircraft({ pos: [port.x - d[0] * 120 + d[2] * 24, port.elev + 1.35, port.z - d[2] * 120 - d[0] * 24], heading: (port.heading + 160) * Math.PI / 180, onGround: true, throttle: 0.05 });
 }
 game.ac = parkedAircraft();
 
@@ -64,7 +52,6 @@ function say(text, color = '#ffffff', seconds = 2.5) {
 	game.message = { text, color, left: seconds };
 }
 
-/** Turn flight-model and mission events into effects, sounds and messages. */
 function handleEvents(ac, run) {
 	for (const e of ac.events) {
 		if (e.type === 'touchdown') {
@@ -75,7 +62,7 @@ function handleEvents(ac, run) {
 		} else if (e.type === 'crash') {
 			effects.crash(ac.pos, e.info.kind === 'water');
 			audio.play('crash');
-		} else if (e.type === 'damage') say(`${e.part === 'airframe' ? 'Airframe' : e.part[0].toUpperCase() + e.part.slice(1)} damage ${Math.round(e.amount)}%  (${e.reason})${e.part === 'gear' && e.amount >= 100 ? ': GEAR COLLAPSED' : e.part === 'flaps' && e.amount >= 100 ? ': FLAPS JAMMED' : ''}`, '#ff9a3c');
+		} else if (e.type === 'damage') say(`${e.part.toUpperCase()} ${e.amount >= 100 ? 'FAILED' : `DAMAGE ${Math.round(e.amount)}%`}: ${e.reason}`, '#ff9a3c');
 		else if (e.type === 'engine-out' || e.type === 'fuel-out') {
 			say(e.type === 'fuel-out' ? 'Fuel exhausted: engine stopped' : 'ENGINE FAILURE: glide to a strip', '#ff5a3a', 4);
 			audio.play('warn');
@@ -86,13 +73,12 @@ function handleEvents(ac, run) {
 	for (const m of run.messages) say(m.text, m.color, m.seconds);
 	for (const s of run.sounds) {
 		audio.play(s);
-		const passed = s === 'ring' && (run.gate && run.gate.passed ? run.gate : run.rings[run.ringIndex - 1]);
+		const passed = s === 'ring' && (run.gate?.passed ? run.gate : run.rings[run.ringIndex - 1]);
 		if (passed) effects.ringBurst(passed.pos);
 	}
 	run.messages.length = run.sounds.length = 0;
 }
 
-/** Apply the pilot's settings, run fixed physics steps for `dt` seconds, refuel when stopped on a strip. */
 function simulate(dt, input, actions = {}) {
 	const ac = game.ac, run = game.run;
 	if (input.throttleSet != null) ac.throttle = input.throttleSet;
@@ -115,8 +101,8 @@ function simulate(dt, input, actions = {}) {
 }
 
 function finishSortie() {
-	const run = game.run, m = run.result && run.result.medal;
-	if (run.result && run.result.crash) game.report = describeCrash(run.result.crash);
+	const run = game.run, m = run.result?.medal;
+	if (run.result?.crash) game.report = describeCrash(run.result.crash);
 	if (m && !shotName) {
 		const order = { gold: 3, silver: 2, bronze: 1 }, prev = game.best[run.def.id];
 		if (!prev || order[m] > order[prev]) {
@@ -128,7 +114,6 @@ function finishSortie() {
 	game.state = 'debrief';
 }
 
-/** Everything the instruments and head-up layer display. */
 function readouts(ac, run) {
 	const att = attitudeOf(ac.q), wp = run && run.waypoint;
 	const agl = Math.max(0, ac.pos[1] - 1.35 - Math.max(0, world.surfaceAt(ac.pos[0], ac.pos[2]).height));
@@ -136,8 +121,7 @@ function readouts(ac, run) {
 	return {
 		airspeed: ac.airspeed * 3.6, alt: ac.pos[1] - 1.35, agl, vs: ac.vel[1], pitch: att.pitch, bank: att.bank, heading: att.heading,
 		bearing: wp ? Math.atan2(wp.pos[0] - ac.pos[0], -(wp.pos[2] - ac.pos[2])) : null, rpm: ac.rpm,
-		fuel: ac.fuel / AIRFRAME.fuelCapacity, fuelLitres: ac.fuel, damage: worstDamage(ac) / 100, parts: ac.parts, airframe: ac.damage, mass: ac.mass,
-		throttle: ac.throttle, flaps: ac.flaps,
+		fuel: ac.fuel / AIRFRAME.fuelCapacity, fuelLitres: ac.fuel, damage: worstDamage(ac) / 100, parts: ac.parts, throttle: ac.throttle, flaps: ac.flaps,
 		stall: ac.stallWarning, brakes: ac.brakes, engineFail: !ac.engineOn, overspeed: ac.overspeed,
 		groundSpeed: Math.hypot(ac.vel[0], ac.vel[2]) * 3.6, pullUp: !ac.onGround && agl < 70 && ac.vel[1] < -9,
 	};
@@ -160,9 +144,9 @@ function drawFrame(W, H) {
 		game.titleRows = drawSortieBoard(hud, W, H, { selected: game.selected, best: game.best, time: game.time, loadout: loadoutFor(MISSIONS[game.selected]), minimap });
 		return;
 	}
+	if (state === 'debrief') return drawDebrief(hud, W, H, run.def, run.result || {}, game.report, ac);
 	const s = readouts(ac, run), k = H / 800;
 	const info = { title: run.def.title, lines: [], clock: null, waypoint: null, bugDeg: null, message: game.message };
-	if (state === 'debrief') return drawDebrief(hud, W, H, run.def, run.result || {}, game.report, ac);
 	if (!ac.crashed) {
 		const panelTop = drawInstrumentPanel(hud, W, H, s, cockpit);
 		Object.assign(info, {
@@ -189,9 +173,8 @@ function updateTitle(dt) {
 	if (controls.mouse.clicked) {
 		const dpr = hudCanvas.width / window.innerWidth, mx = controls.mouse.x * dpr, my = controls.mouse.y * dpr;
 		const hit = game.titleRows.find((r) => mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h);
-		if (hit && hit.index !== undefined) go = hit.index === game.selected || void (game.selected = hit.index);
-		else if (hit && hit.go) go = true;
-		else if (hit) adjustLoadout(lo, def, hit.fuel || 0, hit.cargo || 0);
+		if (hit?.index !== undefined) go = hit.index === game.selected || void (game.selected = hit.index);
+		else if (hit) go = hit.go || void adjustLoadout(lo, def, hit.fuel || 0, hit.cargo || 0);
 	}
 	if (go) {
 		audio.start();
@@ -245,15 +228,11 @@ function frame(now) {
 	requestAnimationFrame(frame);
 }
 
-// read-only state for automated play tests
 Object.defineProperty(window, '__flight', {
-	get: () => {
-		const { ac, run } = game;
-		return {
-			state: game.state, time: ac.time, mission: run ? run.def.id : null, status: run ? run.status : null, pos: [...ac.pos],
-			speedKmh: ac.airspeed * 3.6, onGround: ac.onGround, crashed: ac.crashed ? ac.crashed.cause : null, fuel: ac.fuel, throttle: ac.throttle,
-		};
-	},
+	get: ({ ac, run, state } = game) => ({
+		state, time: ac.time, mission: run?.def.id ?? null, status: run?.status ?? null, pos: [...ac.pos], speedKmh: ac.airspeed * 3.6,
+		onGround: ac.onGround, crashed: ac.crashed?.cause ?? null, fuel: ac.fuel, throttle: ac.throttle,
+	}),
 });
 
 if (shotName) {

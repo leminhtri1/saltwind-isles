@@ -1,6 +1,6 @@
 // Mission runtime: start a sortie, follow each step (rings, gate, touchdown, crates, mail), grade it.
 import { DEG, length, quatRotate } from './math3d.js';
-import { AIRFRAME } from './flight-model.js';
+import { AIRFRAME, worstDamage } from './flight-model.js';
 import { defaultLoadout } from './loadout.js';
 import { layRingCourse, makeRing, ringCrossing } from './rings.js';
 import { medalFor, scoreLanding } from './landing-score.js';
@@ -18,7 +18,6 @@ const timeMedal = (t, medals) => (t <= medals[0] ? 'gold' : t <= medals[1] ? 'si
 const stripMark = (s) => ({ pos: [s.x, s.elev, s.z], label: s.name.toUpperCase() });
 const headingTo = (from, to) => Math.atan2(to[0] - from[0], -(to[2] - from[2]));
 
-/** A flat, open meadow near a village for a drop mark. */
 function flatSpotNear(world, x, z) {
 	for (let r = 60; r < 600; r += 30) {
 		for (let k = 0; k < 12; k++) {
@@ -30,7 +29,6 @@ function flatSpotNear(world, x, z) {
 	return [x, world.terrain.heightAt(x, z), z];
 }
 
-/** Start a sortie with the chosen loadout {fuel litres, cargo kg}. */
 export function startMission(def, world, loadout = defaultLoadout(def)) {
 	Object.assign(world.wind, def.wind);
 	const run = {
@@ -87,7 +85,7 @@ function updateRings(run, ac) {
 	}
 	finish(run, true, {
 		medal: timeMedal(run.time, md), headline: `Course complete in ${formatTime(run.time)}`,
-		lines: [`Time ${formatTime(run.time)}  (gold under ${formatTime(md[0])}, silver under ${formatTime(md[1])})`, `Peak load ${ac.maxG.toFixed(1)} g, damage ${Math.round(ac.damage)}%`, `Fuel left ${Math.round(ac.fuel)} L`],
+		lines: [`Time ${formatTime(run.time)}  (gold under ${formatTime(md[0])}, silver under ${formatTime(md[1])})`, `Peak load ${ac.maxG.toFixed(1)} g, damage ${Math.round(worstDamage(ac))}%`, `Fuel left ${Math.round(ac.fuel)} L`],
 	});
 }
 
@@ -116,7 +114,6 @@ function updateLanding(run, ac, world) {
 	finish(run, ok, { medal: medalFor(res.score), score: res.score, headline, lines: res.lines, touchdown: run.firstTouchdown, card: res, stop: stripLocal(findStrip(run.def.strip), ac.pos[0], ac.pos[2]) });
 }
 
-/** Crate flight: ballistic, then the canopy opens and it drifts with the wind toward a 7 m/s descent. */
 function stepCrate(c, wind, dt) {
 	c.t += dt;
 	if (c.t > 0.9) {
@@ -134,7 +131,6 @@ const newCrate = (ac) => {
 	return { pos: [ac.pos[0] + d[0], ac.pos[1] + d[1], ac.pos[2] + d[2]], vel: [...ac.vel], t: 0, chute: 0, landed: false };
 };
 
-/** Where a crate released now would touch down: the drop-aim reticle. */
 export function predictCrateLanding(ac, world, time) {
 	const c = newCrate(ac);
 	for (let i = 0; i < 400; i++) {
@@ -198,15 +194,13 @@ function updateMail(run, ac, world, dt) {
 		run.waypoint = stripMark(s);
 		return;
 	}
-	// every 40 kg of freight takes 15 s off the scored time
 	const bonus = run.loadout.cargo / 40 * 15, scored = Math.max(0, run.time - bonus);
 	finish(run, true, {
 		medal: timeMedal(scored, run.def.medals), headline: `Mail delivered: scored ${formatTime(scored)}`,
-		lines: [...run.delivered.map((d) => `${d.name} at ${formatTime(d.time)}`), `${run.loadout.cargo} kg freight: ${Math.round(bonus)} s off the flown ${formatTime(run.time)}`, `Fuel left ${Math.round(ac.fuel)} L, damage ${Math.round(ac.damage)}%`],
+		lines: [...run.delivered.map((d) => `${d.name} at ${formatTime(d.time)}`), `${run.loadout.cargo} kg freight: ${Math.round(bonus)} s off the flown ${formatTime(run.time)}`, `Fuel left ${Math.round(ac.fuel)} L, damage ${Math.round(worstDamage(ac))}%`],
 	});
 }
 
-/** Follow one physics step of the sortie. */
 export function updateMission(run, ac, world, dt, actions) {
 	if (run.status !== 'running') return;
 	run.time += dt;
@@ -220,7 +214,6 @@ export function updateMission(run, ac, world, dt, actions) {
 	run.prevPos = [...ac.pos];
 }
 
-/** The crate's predicted miss in the pilot's frame: short or long, left or right of the mark. */
 export function dropAimText(run, aim, heading) {
 	const t = run.targets[run.targetIndex];
 	if (!t) return '';
@@ -229,7 +222,6 @@ export function dropAimText(run, aim, heading) {
 	return `Crate lands ${Math.round(Math.abs(ahead))} m ${ahead > 0 ? 'short' : 'long'}, ${Math.round(Math.abs(side))} m ${side > 0 ? 'left' : 'right'}`;
 }
 
-/** Lines for the objective card. */
 export function objectiveLines(run, ac) {
 	const d = run.def;
 	if (d.kind === 'rings') return [`Ring ${Math.min(run.ringIndex + 1, run.rings.length)} of ${run.rings.length}`, `Time ${formatTime(run.time)}`];
