@@ -1,6 +1,6 @@
 // Screenshot scenes behind ?shot=<name>: a real mission placed and stepped forward deterministically.
 import { DEG, quatFromAttitude, quatRotate, scale } from './math3d.js';
-import { MISSIONS, approachGeometry, glidePathPoint } from './missions.js';
+import { MISSIONS, approachGeometry, glidePathPoint } from './mission-catalog.js';
 import { landingAutopilot } from './autopilot.js';
 
 const FRAME = 1 / 60;

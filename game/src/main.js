@@ -8,7 +8,9 @@ import { Controls } from './controls.js';
 import { FlightCamera } from './camera.js';
 import { Effects } from './effects.js';
 import { FlightAudio } from './audio.js';
-import { MISSIONS, dropAimText, formatTime, objectiveLines, predictCrateLanding, startMission, updateMission } from './missions.js';
+import { formatTime, objectiveLines, startMission, updateMission } from './missions.js';
+import { MISSIONS } from './mission-catalog.js';
+import { dropAimText, predictCrateLanding } from './crate-drop.js';
 import { sinkRating } from './landing-score.js';
 import { describeCrash } from './crash-report.js';
 import { drawInstrumentPanel } from './hud-instruments.js';
@@ -154,7 +156,7 @@ function drawFrame(W, H) {
 			bugDeg: s.bearing === null ? null : ((s.bearing * 180) / Math.PI + 360) % 360,
 			dropAim: run.def.kind === 'drop' && !ac.onGround && run.cratesLeft > 0 ? predictCrateLanding(ac, world, run.time) : null,
 		});
-		if (info.dropAim) info.lines.push(dropAimText(run, info.dropAim, s.heading));
+		if (info.dropAim && run.targets[run.targetIndex]) info.lines.push(dropAimText(run.targets[run.targetIndex], info.dropAim, s.heading));
 		drawHudOverlay(hud, W, H, s, info, viewProj, ac, panelTop, game.time);
 		minimap.draw(hud, W - 105 * k, 100 * k, 84 * k, ac, run);
 	} else if (game.message && state === 'flying') drawHudOverlay(hud, W, H, s, info, viewProj, ac, H, game.time);

@@ -1,5 +1,5 @@
 // Island heightfield: noise shaped by island blobs, flattened under strips, coloured by height, slope, fields and hollows.
-import { clamp, lerp, lerp3, smoothstep } from './math3d.js';
+import { clamp, cross, lerp, lerp3, normalize, smoothstep, sub } from './math3d.js';
 import { createNoise2D, fbm } from './noise.js';
 import { MeshBuilder } from './mesh-builder.js';
 import { ISLAND_BLOBS, SEA_FLOOR, STRIPS, TERRAIN_CELLS, VILLAGES, WORLD_HALF, WORLD_SEED, stripLocal } from './world-layout.js';
@@ -49,11 +49,7 @@ export function createTerrain(seed = WORLD_SEED) {
 		let h = shapedHeight(x, z);
 		for (const s of STRIPS) {
 			const { along, across } = stripLocal(s, x, z);
-			const ea = Math.abs(along) - (s.length / 2 + 70);
-			const ec = Math.abs(across) - (s.width / 2 + 45);
-			const outside = Math.max(ea, ec, 0);
-			const w = 1 - smoothstep(0, 170, outside);
-			if (w > 0) h = lerp(h, s.elev, w);
+			h = lerp(h, s.elev, 1 - smoothstep(0, 170, Math.max(Math.abs(along) - s.length / 2 - 70, Math.abs(across) - s.width / 2 - 45, 0)));
 		}
 		return h;
 	}
@@ -120,16 +116,10 @@ export function createTerrain(seed = WORLD_SEED) {
 				const h00 = at(i, j), h10 = at(i + 1, j), h01 = at(i, j + 1), h11 = at(i + 1, j + 1);
 				if (Math.max(h00, h10, h01, h11) < -4) continue;
 				const p00 = [x0, h00, z0], p10 = [x0 + cell, h10, z0], p01 = [x0, h01, z0 + cell], p11 = [x0 + cell, h11, z0 + cell];
-				const tris = [[p00, p11, p10], [p00, p01, p11]];
-				for (const [a, b, c] of tris) {
-					const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-					const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-					const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-					const nl = Math.hypot(nx, ny, nz);
-					const h = (a[1] + b[1] + c[1]) / 3;
-					const hollow = (at(i - 2, j) + at(i + 3, j) + at(i, j - 2) + at(i, j + 3) + at(i - 2, j - 2) + at(i + 3, j + 3)) / 6 - h;
-					const color = faceColor(h, ny / nl, (a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, jitter(), h > 0 ? hollow : 0);
-					mb.triWorld(a, b, c, color, [nx / nl, ny / nl, nz / nl]);
+				const around = (at(i - 2, j) + at(i + 3, j) + at(i, j - 2) + at(i, j + 3) + at(i - 2, j - 2) + at(i + 3, j + 3)) / 6;
+				for (const [a, b, c] of [[p00, p11, p10], [p00, p01, p11]]) {
+					const n = normalize(cross(sub(b, a), sub(c, a))), m = [0, 1, 2].map((k) => (a[k] + b[k] + c[k]) / 3);
+					mb.triWorld(a, b, c, faceColor(m[1], n[1], m[0], m[2], jitter(), m[1] > 0 ? around - m[1] : 0), n);
 				}
 			}
 		}
@@ -152,11 +142,8 @@ export function createTerrain(seed = WORLD_SEED) {
 				indices.push(a, c, d, a, d, b);
 			}
 		}
-		const far = 60000, base = positions.length / 3;
-		const ring = [[-far, -far], [far, -far], [far, far], [-far, far]];
-		const inner = [[-WORLD_HALF, -WORLD_HALF], [WORLD_HALF, -WORLD_HALF], [WORLD_HALF, WORLD_HALF], [-WORLD_HALF, WORLD_HALF]];
-		for (const [x, z] of ring) { positions.push(x, 0, z); depths.push(60); }
-		for (const [x, z] of inner) { positions.push(x, 0, z); depths.push(60); }
+		const base = positions.length / 3;
+		for (const r of [60000, WORLD_HALF]) for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) positions.push(x * r, 0, z * r) && depths.push(60);
 		for (let k = 0; k < 4; k++) {
 			const o0 = base + k, o1 = base + ((k + 1) % 4), i0 = base + 4 + k, i1 = base + 4 + ((k + 1) % 4);
 			indices.push(o0, i0, i1, o0, i1, o1);
