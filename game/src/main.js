@@ -50,6 +50,9 @@ function startMissionAt(index) {
 	camera.offset = null;
 }
 
+const NOTES = { 'engine-out': ['ENGINE FAILURE: glide to a strip', '#ff5a3a', 4], 'fuel-out': ['Fuel exhausted: engine stopped', '#ff5a3a', 4], 'tail-strike': ['Tail strike!', '#ff9a3c', 2] };
+const key = (...codes) => codes.some((c) => controls.consume(c));
+
 function say(text, color = '#ffffff', seconds = 2.5) {
 	game.message = { text, color, left: seconds };
 }
@@ -65,10 +68,10 @@ function handleEvents(ac, run) {
 			effects.crash(ac.pos, e.info.kind === 'water');
 			audio.play('crash');
 		} else if (e.type === 'damage') say(`${e.part.toUpperCase()} ${e.amount >= 100 ? 'FAILED' : `DAMAGE ${Math.round(e.amount)}%`}: ${e.reason}`, '#ff9a3c');
-		else if (e.type === 'engine-out' || e.type === 'fuel-out') {
-			say(e.type === 'fuel-out' ? 'Fuel exhausted: engine stopped' : 'ENGINE FAILURE: glide to a strip', '#ff5a3a', 4);
-			audio.play('warn');
-		} else if (e.type === 'tail-strike') say('Tail strike!', '#ff9a3c', 2);
+		else if (NOTES[e.type]) {
+			say(...NOTES[e.type]);
+			if (e.type !== 'tail-strike') audio.play('warn');
+		}
 	}
 	ac.events.length = 0;
 	if (!run) return;
@@ -95,8 +98,7 @@ function simulate(dt, input, actions = {}) {
 	const surf = world.surfaceAt(ac.pos[0], ac.pos[2]);
 	ac.refuelling = ac.onGround && !ac.crashed && length(ac.vel) < 1.5 && !!surf.strip && serviceAircraft(ac, dt);
 	if (ac.parts.engine > 45 && !ac.crashed) effects.engineSmoke(ac.pos, ac.vel, ac.parts.engine);
-	const target = run && run.targets[run.targetIndex];
-	if (target) effects.flare(target.pos);
+	if (run?.targets[run.targetIndex]) effects.flare(run.targets[run.targetIndex].pos);
 	effects.update(dt, world.windAt(ac.pos, ac.time));
 	handleEvents(ac, run);
 	if (game.message && (game.message.left -= dt) <= 0) game.message = null;
@@ -106,8 +108,8 @@ function finishSortie() {
 	const run = game.run, m = run.result?.medal;
 	if (run.result?.crash) game.report = describeCrash(run.result.crash);
 	if (m && !shotName) {
-		const order = { gold: 3, silver: 2, bronze: 1 }, prev = game.best[run.def.id];
-		if (!prev || order[m] > order[prev]) {
+		const order = { gold: 3, silver: 2, bronze: 1 };
+		if (!(order[game.best[run.def.id]] >= order[m])) {
 			game.best[run.def.id] = m;
 			try { localStorage.setItem('saltwind-best', JSON.stringify(game.best)); } catch { /* private mode */ }
 		}
@@ -117,7 +119,7 @@ function finishSortie() {
 }
 
 function readouts(ac, run) {
-	const att = attitudeOf(ac.q), wp = run && run.waypoint;
+	const att = attitudeOf(ac.q), wp = run?.waypoint;
 	const agl = Math.max(0, ac.pos[1] - 1.35 - Math.max(0, world.surfaceAt(ac.pos[0], ac.pos[2]).height));
 	ac.headingRad = att.heading;
 	return {
@@ -165,13 +167,12 @@ function drawFrame(W, H) {
 
 function updateTitle(dt) {
 	const n = MISSIONS.length;
-	if (controls.consume('ArrowDown') || controls.consume('KeyS')) game.selected = (game.selected + 1) % n;
-	if (controls.consume('ArrowUp') || controls.consume('KeyW')) game.selected = (game.selected + n - 1) % n;
-	for (let i = 0; i < n; i++) if (controls.consume('Digit' + (i + 1))) game.selected = i;
-	let go = controls.consume('Enter') || controls.consume('Space');
+	if (key('ArrowDown', 'KeyS')) game.selected = (game.selected + 1) % n;
+	if (key('ArrowUp', 'KeyW')) game.selected = (game.selected + n - 1) % n;
+	for (let i = 0; i < n; i++) if (key('Digit' + (i + 1))) game.selected = i;
+	let go = key('Enter', 'Space');
 	const def = MISSIONS[game.selected], lo = loadoutFor(def);
-	const step = (code, f, c) => controls.consume(code) && adjustLoadout(lo, def, f, c);
-	step('KeyA', -1, 0) || step('ArrowLeft', -1, 0) || step('KeyD', 1, 0) || step('ArrowRight', 1, 0) || step('KeyQ', 0, -1) || step('KeyE', 0, 1);
+	adjustLoadout(lo, def, key('KeyD', 'ArrowRight') - key('KeyA', 'ArrowLeft'), key('KeyE') - key('KeyQ'));
 	if (controls.mouse.clicked) {
 		const dpr = hudCanvas.width / window.innerWidth, mx = controls.mouse.x * dpr, my = controls.mouse.y * dpr;
 		const hit = game.titleRows.find((r) => mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h);
@@ -191,27 +192,27 @@ function updateState(dt) {
 	const { ac, state } = game;
 	if (state === 'title') return updateTitle(dt);
 	if (state === 'paused') {
-		if (controls.consume('Escape') || controls.consume('KeyP')) game.state = 'flying';
-		if (controls.consume('KeyR')) startMissionAt(game.missionIndex);
-		if (controls.consume('KeyM')) toTitle();
+		if (key('Escape', 'KeyP')) game.state = 'flying';
+		if (key('KeyR')) startMissionAt(game.missionIndex);
+		if (key('KeyM')) toTitle();
 		return;
 	}
 	if (state === 'debrief') {
 		simulate(dt, IDLE);
 		if (ac.crashed) camera.orbit(ac.crashed.pos, 55, 16, dt, 0.12, 14);
 		else camera.follow(ac, dt, null, world.terrain.heightAt);
-		if (controls.consume('Enter') || controls.consume('KeyR')) startMissionAt(game.missionIndex);
-		else if (controls.consume('KeyN')) startMissionAt((game.missionIndex + 1) % MISSIONS.length);
-		else if (controls.consume('KeyM') || controls.consume('Escape')) toTitle();
+		if (key('Enter', 'KeyR')) startMissionAt(game.missionIndex);
+		else if (key('KeyN')) startMissionAt((game.missionIndex + 1) % MISSIONS.length);
+		else if (key('KeyM', 'Escape')) toTitle();
 		return;
 	}
-	if (controls.consume('Escape') || controls.consume('KeyP')) return void (game.state = 'paused');
-	if (controls.consume('KeyC')) camera.toggle();
-	if (controls.consume('KeyI')) controls.invertPitch = !controls.invertPitch;
-	if (controls.consume('KeyM')) audio.muted = !audio.muted;
+	if (key('Escape', 'KeyP')) return void (game.state = 'paused');
+	if (key('KeyC')) camera.toggle();
+	if (key('KeyI')) controls.invertPitch = !controls.invertPitch;
+	if (key('KeyM')) audio.muted = !audio.muted;
 	if (controls.mouse.clicked) audio.start();
 	const input = ac.crashed ? IDLE : controls.sample(dt);
-	simulate(dt, input, { flapsDown: controls.consume('KeyF'), flapsUp: controls.consume('KeyR'), drop: controls.consume('Space') });
+	simulate(dt, input, { flapsDown: key('KeyF'), flapsUp: key('KeyR'), drop: key('Space') });
 	if (ac.crashed) camera.orbit(ac.crashed.pos, 40, 14, dt, 0.18);
 	else camera.follow(ac, dt, input, world.terrain.heightAt);
 	if (game.run.status !== 'running' && (game.endTimer += dt) > (ac.crashed ? 2.8 : 1.6)) finishSortie();

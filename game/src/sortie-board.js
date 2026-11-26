@@ -5,11 +5,10 @@ import { performance } from './loadout.js';
 import { AIRFRAME } from './flight-model.js';
 import { WORLD_HALF } from './world-layout.js';
 import { FONT, SERIF, gradient, line, panel, poly, text, wrapText } from './canvas-kit.js';
-import { card, drawMedal, tile } from './screens.js';
+import { KEYS, card, drawMedal, tile } from './screens.js';
 
 const KIND = { landing: ['LANDING', '#7dd3ff'], rings: ['RING COURSE', '#ffd36b'], drop: ['SUPPLY DROP', '#ff9a5c'], mail: ['MAIL RUN', '#b7f07a'], free: ['EXPLORE', '#d2c2ff'] };
 const INK = '#f2f6f8', DIM = '#9fb3c0', GOLD = '#ffd36b';
-const KEYS = 'W/S pitch   ·   A/D roll   ·   Q/E rudder   ·   Shift/Ctrl or 1-0 throttle   ·   F/R flaps   ·   B brakes   ·   Space drop   ·   C cockpit   ·   Esc pause';
 
 function chip(ctx, x, y, kind) {
 	const [label, color] = KIND[kind];

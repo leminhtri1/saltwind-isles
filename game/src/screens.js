@@ -2,11 +2,7 @@
 import { FONT, disc, gradient, panel, poly, ring, text } from './canvas-kit.js';
 
 const MEDAL_COLORS = { gold: ['#fff2a8', '#e0a91c', '#8a5a00'], silver: ['#ffffff', '#b8c2cc', '#5d6a75'], bronze: ['#ffd2a8', '#c8773a', '#6e3a12'] };
-const HELP = [
-	['W / S  or  ↑ ↓', 'Pitch down / up'], ['A / D  or  ← →', 'Roll left / right'], ['Q / E', 'Rudder, steer on the ground'],
-	['Shift / Ctrl, wheel, 1-0', 'Throttle'], ['F / R', 'Flaps down / up'], ['B', 'Wheel brakes'], ['Space', 'Drop crate'],
-	['Left-drag', 'Mouse yoke'], ['Right-drag', 'Look around'], ['C', 'Chase / cockpit view'], ['Esc / P', 'Pause'],
-];
+export const KEYS = 'W/S pitch   ·   A/D roll   ·   Q/E rudder   ·   Shift/Ctrl or 1-0 throttle   ·   F/R flaps   ·   B brakes   ·   Space drop   ·   C cockpit   ·   Esc pause';
 
 export function drawMedal(ctx, x, y, r, medal) {
 	if (!medal) return ring(ctx, x, y, r, 'rgba(255,255,255,0.35)', 2);
@@ -39,12 +35,9 @@ export function drawPause(ctx, W, H) {
 	ctx.fillRect(0, 0, W, H);
 	ctx.save();
 	ctx.setTransform(k, 0, 0, k, (W - 1280 * k) / 2, 0);
-	card(ctx, 380, 200, 520, 400);
-	text(ctx, 'PAUSED', 640, 220, 30, '#ffd36b', 800, FONT, 'center', 'top');
-	HELP.forEach(([key, what], i) => {
-		text(ctx, key, 628, 274 + i * 24, 14, '#ffd36b', 600, FONT, 'right', 'top');
-		text(ctx, what, 652, 274 + i * 24, 14, '#dfe7ec', 600, FONT, 'left', 'top');
-	});
-	text(ctx, 'Esc resume  ·  R restart  ·  M sortie board', 640, 564, 15, '#fff', 600);
+	card(ctx, 240, 300, 800, 200);
+	text(ctx, 'PAUSED', 640, 340, 34, '#ffd36b', 900);
+	text(ctx, KEYS, 640, 400, 14, '#dfe7ec', 600);
+	text(ctx, 'Esc resume   ·   R restart   ·   M sortie board', 640, 450, 17, '#fff', 700);
 	ctx.restore();
 }

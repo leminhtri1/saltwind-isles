@@ -2,9 +2,11 @@
 import { cross, mat4Identity, mat4Multiply, mat4TransformPoint, normalize, sub } from './math3d.js';
 
 export class MeshBuilder {
-	constructor() {
-		Object.assign(this, { positions: [], normals: [], colors: [], matrix: mat4Identity(), stack: [] });
-	}
+	positions = [];
+	normals = [];
+	colors = [];
+	matrix = mat4Identity();
+	stack = [];
 
 	push(m) {
 		this.stack.push(this.matrix);
@@ -17,17 +19,16 @@ export class MeshBuilder {
 		return this;
 	}
 
-	tri(a, b, c, color) {
-		const m = this.matrix;
-		this.triWorld(mat4TransformPoint(m, a), mat4TransformPoint(m, b), mat4TransformPoint(m, c), color);
+	tri(...pts) {
+		const color = pts.pop();
+		this.triWorld(...pts.map((p) => mat4TransformPoint(this.matrix, p)), color);
 	}
 
-	triWorld(pa, pb, pc, color, normal) {
-		const n = normal || normalize(cross(sub(pb, pa), sub(pc, pa))), g = color[3] || 0;
-		this.positions.push(pa[0], pa[1], pa[2], pb[0], pb[1], pb[2], pc[0], pc[1], pc[2]);
+	triWorld(a, b, c, color, n = normalize(cross(sub(b, a), sub(c, a)))) {
+		this.positions.push(...a, ...b, ...c);
 		for (let i = 0; i < 3; i++) {
-			this.normals.push(n[0], n[1], n[2]);
-			this.colors.push(color[0], color[1], color[2], g);
+			this.normals.push(...n);
+			this.colors.push(color[0], color[1], color[2], color[3] || 0);
 		}
 	}
 
@@ -37,25 +38,22 @@ export class MeshBuilder {
 	}
 
 	box(x, y, z, sx, sy, sz, color, topColor = color) {
-		const x0 = x - sx / 2, x1 = x + sx / 2, y0 = y - sy / 2, y1 = y + sy / 2, z0 = z - sz / 2, z1 = z + sz / 2;
-		this.quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], topColor); // top
-		this.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], color); // bottom
-		this.quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], color); // south (+z)
-		this.quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], color); // north (-z)
-		this.quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], color); // east
-		this.quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], color); // west
+		const X = [x - sx / 2, x + sx / 2], Y = [y - sy / 2, y + sy / 2], Z = [z - sz / 2, z + sz / 2], p = (i, j, k) => [X[i], Y[j], Z[k]];
+		this.quad(p(0, 1, 1), p(1, 1, 1), p(1, 1, 0), p(0, 1, 0), topColor);
+		for (const f of [[0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1], [0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0], [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0]]) {
+			this.quad(p(f[0], f[1], f[2]), p(f[3], f[4], f[5]), p(f[6], f[7], f[8]), p(f[9], f[10], f[11]), color);
+		}
 		return this;
 	}
 
 	frustum(x, y0, z, r0, y1, r1, sides, color, capColor = color) {
+		const at = (i, r, y) => [x + Math.cos(i / sides * 6.2832) * r, y, z + Math.sin(i / sides * 6.2832) * r];
 		for (let i = 0; i < sides; i++) {
-			const a0 = (i / sides) * Math.PI * 2, a1 = ((i + 1) / sides) * Math.PI * 2;
-			const c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
-			const p0 = [x + c0 * r0, y0, z + s0 * r0], p1 = [x + c1 * r0, y0, z + s1 * r0];
-			const q0 = [x + c0 * r1, y1, z + s0 * r1], q1 = [x + c1 * r1, y1, z + s1 * r1];
-			if (r1 > 0.0001) this.quad(p0, q0, q1, p1, color);
-			else this.tri(p0, q0, p1, color);
-			if (r1 > 0.0001) this.tri([x, y1, z], q1, q0, capColor);
+			const p0 = at(i, r0, y0), p1 = at(i + 1, r0, y0), q0 = at(i, r1, y1), q1 = at(i + 1, r1, y1);
+			if (r1 > 0.0001) {
+				this.quad(p0, q0, q1, p1, color);
+				this.tri([x, y1, z], q1, q0, capColor);
+			} else this.tri(p0, q0, p1, color);
 			if (r0 > 0.0001) this.tri([x, y0, z], p0, p1, capColor);
 		}
 		return this;
@@ -79,23 +77,11 @@ export class MeshBuilder {
 	}
 
 	loft(sections) {
-		const ring = (s) => {
-			const pts = [];
-			for (let k = 0; k < 8; k++) {
-				const a = (k / 8) * Math.PI * 2 + Math.PI / 8;
-				pts.push([Math.cos(a) * s.w, s.y + Math.sin(a) * s.h, s.z]);
-			}
-			return pts;
-		};
-		const rings = sections.map(ring);
-		for (let i = 0; i < sections.length - 1; i++) {
-			const A = rings[i], B = rings[i + 1];
-			for (let k = 0; k < 8; k++) {
-				const k1 = (k + 1) % 8;
-				const color = sections[i].colors ? sections[i].colors[k] : sections[i].color;
-				this.quad(A[k], A[k1], B[k1], B[k], color);
-			}
-		}
+		const rings = sections.map((s) => [...Array(8)].map((_, k) => [Math.cos(k * 0.7854 + 0.3927) * s.w, s.y + Math.sin(k * 0.7854 + 0.3927) * s.h, s.z]));
+		rings.forEach((A, i) => {
+			const B = rings[i + 1], s = sections[i];
+			if (B) for (let k = 0; k < 8; k++) this.quad(A[k], A[(k + 1) % 8], B[(k + 1) % 8], B[k], s.colors ? s.colors[k] : s.color);
+		});
 		const first = rings[0], last = rings[rings.length - 1];
 		for (let k = 1; k < 7; k++) {
 			this.tri(first[0], first[k + 1], first[k], sections[0].color);
@@ -105,11 +91,7 @@ export class MeshBuilder {
 	}
 
 	build() {
-		return {
-			positions: new Float32Array(this.positions),
-			normals: new Float32Array(this.normals),
-			colors: new Float32Array(this.colors),
-			count: this.positions.length / 3,
-		};
+		const f = (a) => new Float32Array(a);
+		return { positions: f(this.positions), normals: f(this.normals), colors: f(this.colors), count: this.positions.length / 3 };
 	}
 }

@@ -2,17 +2,11 @@
 import { add, clamp, damp, lerp3, madd, normalize, quatRotate, scale } from './math3d.js';
 
 export class FlightCamera {
-	constructor() {
-		this.mode = 'chase';
-		this.offset = null;
-		this.lookYaw = 0;
-		this.lookPitch = 0;
-		this.eye = [0, 100, 0];
-		this.target = [0, 0, -1];
-		this.up = [0, 1, 0];
-		this.fov = 58;
-		this.orbitAngle = 0;
-	}
+	mode = 'chase';
+	offset = null;
+	lookYaw = 0;
+	lookPitch = 0;
+	orbitAngle = 0;
 
 	toggle() {
 		this.mode = this.mode === 'chase' ? 'cockpit' : 'chase';

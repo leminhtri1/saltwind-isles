@@ -1,8 +1,5 @@
 // The Kittiwake flight model: loaded mass, thrust, lift to the stall, drag, controls fading with speed, wheels, fuel, and engine/gear/flap damage.
-import {
-	DEG, attitudeOf, clamp, cross, damp, dot, length, madd, normalize, quatAxisAngle, quatFromAttitude,
-	quatMul, quatNormalize, quatRotate, scale, sub,
-} from './math3d.js';
+import { DEG, attitudeOf, clamp, cross, damp, dot, length, madd, normalize, quatAxisAngle, quatFromAttitude, quatMul, quatNormalize, quatRotate, scale, sub } from './math3d.js';
 import { GEAR_HEIGHT } from './aircraft-mesh.js';
 
 export const AIRFRAME = {
@@ -17,10 +14,8 @@ export function createAircraft({ pos, heading = 0, pitch = 0, bank = 0, speed = 
 	const q = quatFromAttitude(heading, pitch, bank);
 	return {
 		pos: [...pos], vel: scale(quatRotate(q, [0, 0, -1]), speed), q, rates: { roll: 0, pitch: 0, yaw: 0 }, throttle, flaps, flapAngle: flaps / 2,
-		brakes: false, fuel: fuel * AIRFRAME.fuelCapacity, cargo, parts: { engine: 0, gear: 0, flaps: 0, airframe: 0 }, mass: 0,
-		engineOn: true, onGround, crashed: null, time: 0, alpha: 0, beta: 0,
-		airspeed: speed, gLoad: 1, maxG: 1, stalled: false, stallWarning: false, overspeed: false, rpm: throttle > 0 ? 700 + 1900 * throttle : 0,
-		propAngle: 0, surfaces: { aileron: 0, elevator: 0, rudder: 0 }, lastStall: null, wingDrop: 1, touchdown: null, events: [], refuelling: false,
+		fuel: fuel * AIRFRAME.fuelCapacity, cargo, parts: { engine: 0, gear: 0, flaps: 0, airframe: 0 }, engineOn: true, onGround, time: 0,
+		airspeed: speed, gLoad: 1, maxG: 1, rpm: throttle > 0 ? 700 + 1900 * throttle : 0, propAngle: 0, surfaces: { aileron: 0, elevator: 0, rudder: 0 }, wingDrop: 1, events: [],
 	};
 }
 
