@@ -1,4 +1,4 @@
-// Airstrip meshes: painted asphalt runway with edge, approach and PAPI lights; mown grass strips.
+// Airstrip meshes: painted asphalt runway with edge, sequenced-flasher approach and PAPI lights; mown grass strips.
 import { mat4Compose, mat4RotateY, mat4Translate, mat4TransformPoint } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 import { STRIPS, stripDesignators } from './world-layout.js';
@@ -108,7 +108,7 @@ export function buildAirstrips(heightAt) {
 					for (let x = -span; x <= span + 0.1; x += d === 160 ? 3 : 1) {
 						props.box(x, (ground + 1.2) / 2, lz, 0.25, 1.2 - ground, 0.25, [0.35, 0.33, 0.3, 0]);
 						props.box(x, 1.35, lz, 0.5, 0.35, 0.5, [1, 0.97, 0.85, 1]);
-						lights.push({ pos: toWorld(x, 1.5, lz), color: [1, 0.93, 0.75], size: 3.2 });
+						lights.push({ pos: toWorld(x, 1.5, lz), color: [1, 0.93, 0.75], size: 3.2, rabbit: x === 0 ? (360 - d) / 30 : null });
 					}
 				}
 				// PAPI boxes left of the touchdown zone

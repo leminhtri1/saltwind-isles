@@ -8,17 +8,17 @@ const GLASS = 'rgba(8, 14, 20, 0.55)';
 const EDGE = 'rgba(125, 255, 168, 0.35)';
 const BOX = 'rgba(4, 10, 14, 0.88)';
 
-/** A boxed readout: small label and unit over a large number. */
+/** A boxed readout: bold label and unit stacked at the left, a large number filling the rest. */
 function readout(ctx, x, y, w, h, label, unit, value, k) {
-	panel(ctx, x, y, w, h, 6 * k, BOX, ACCENT, 2.5);
-	text(ctx, label, x + 8 * k, y + 4 * k, 14 * k, ACCENT, 800, FONT, 'left', 'top');
-	if (unit) text(ctx, unit, x + w - 8 * k, y + 4 * k, 14 * k, ACCENT, 800, FONT, 'right', 'top');
-	text(ctx, value, x + w - 10 * k, y + h - 6 * k, (unit ? 34 : 30) * k, INK, 700, MONO, 'right', 'alphabetic');
+	panel(ctx, x, y, w, h, 8 * k, BOX, ACCENT, 3);
+	text(ctx, label, x + 10 * k, y + h * 0.36, 19 * k, ACCENT, 900, FONT, 'left');
+	if (unit) text(ctx, unit, x + 10 * k, y + h * 0.72, 14 * k, ACCENT, 800, FONT, 'left');
+	text(ctx, value, x + w - 10 * k, y + h * 0.56, h * 0.74, INK, 800, FONT, 'right');
 }
 
 /** Vertical tape (side -1 on the left of the screen, +1 on the right) with its readout box. */
 function tape(ctx, x, y, h, value, perPx, minor, major, label, unit, side, k) {
-	const w = 74 * k, ex = x - (side * w) / 2;
+	const w = 64 * k, ex = x - (side * w) / 2;
 	panel(ctx, x - w / 2, y - h / 2, w, h, 6 * k, GLASS, EDGE);
 	ctx.save();
 	ctx.beginPath();
@@ -32,8 +32,8 @@ function tape(ctx, x, y, h, value, perPx, minor, major, label, unit, side, k) {
 		if (big && v >= 0) text(ctx, String(Math.round(v)), ex + side * 18 * k, yy, 15 * k, INK, 600, MONO, side < 0 ? 'right' : 'left');
 	}
 	ctx.restore();
-	const bw = 132 * k, bh = 54 * k;
-	readout(ctx, side < 0 ? x - w / 2 - bw + 30 * k : x + w / 2 - 30 * k, y - bh / 2, bw, bh, label, unit, String(Math.round(value)), k);
+	const bw = 178 * k, bh = 66 * k;
+	readout(ctx, side < 0 ? x - w / 2 - bw + 50 * k : x + w / 2 - 50 * k, y - bh / 2, bw, bh, label, unit, String(Math.round(value)), k);
 }
 
 function headingTape(ctx, cx, y, w, hdg, bug, k) {
@@ -58,7 +58,7 @@ function headingTape(ctx, cx, y, w, hdg, bug, k) {
 		poly(ctx, [[bx, y + h - 2], [bx - 7 * k, y + h - 14 * k], [bx + 7 * k, y + h - 14 * k]], '#ff5ad1');
 	}
 	ctx.restore();
-	readout(ctx, cx - 75 * k, y + h + 4 * k, 150 * k, 44 * k, 'HDG', '', `${String(Math.round(hdg) % 360).padStart(3, '0')}°`, k);
+	readout(ctx, cx - 89 * k, y + h + 4 * k, 178 * k, 60 * k, 'HDG', 'MAG', `${String(Math.round(hdg) % 360).padStart(3, '0')}°`, k);
 }
 
 function missionCard(ctx, x, y, k, title, lines, clock) {
@@ -76,7 +76,7 @@ function waypointMarker(ctx, W, H, viewProj, wp, ac, k, panelTop) {
 	ctx.lineWidth = 2.5;
 	if (p && p.x > m && p.x < W - m && p.y > m && p.y < panelTop - m) {
 		poly(ctx, [[p.x, p.y - s], [p.x + s, p.y], [p.x, p.y + s], [p.x - s, p.y]], null, '#ff5ad1');
-		shadowText(ctx, label, p.x, p.y - s - 14 * k, 15 * k, '#ff5ad1', 800);
+		shadowText(ctx, label, p.x + s + 8 * k, p.y, 15 * k, '#ff5ad1', 800, FONT, 'left');
 		return;
 	}
 	// off screen: an arrow on an ellipse around the centre, pointing the way to turn
@@ -109,9 +109,9 @@ function flightPathMarker(ctx, W, H, viewProj, ac, k) {
 /** Draw the head-up layer; `s` carries the readouts, `hud` the mission card, waypoint and message. */
 export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) {
 	const k = H / 800, midY = Math.min(H * 0.42, panelTop - 170 * k);
-	tape(ctx, 160 * k, midY, 300 * k, s.airspeed, 0.5 / k, 10, 20, 'SPD', 'KM/H', -1, k);
-	tape(ctx, W - 160 * k, midY, 300 * k, s.alt, 2 / k, 10, 50, 'ALT', 'M', 1, k);
-	headingTape(ctx, W / 2, 12 * k, 420 * k, s.heading / (Math.PI / 180), hud.bugDeg, k);
+	tape(ctx, 175 * k, midY, 300 * k, s.airspeed, 0.5 / k, 10, 20, 'SPD', 'KM/H', -1, k);
+	tape(ctx, W - 175 * k, midY, 300 * k, s.alt, 2 / k, 10, 50, 'ALT', 'M', 1, k);
+	headingTape(ctx, W / 2, 10 * k, 400 * k, s.heading / (Math.PI / 180), hud.bugDeg, k);
 	if (hud.title) missionCard(ctx, 16 * k, 14 * k, k, hud.title, hud.lines, hud.clock);
 	if (ac && !ac.crashed) {
 		if (hud.waypoint) waypointMarker(ctx, W, H, viewProj, hud.waypoint, ac, k, panelTop);
@@ -127,9 +127,9 @@ export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) 
 			shadowText(ctx, 'CRATE', aim.x, aim.y + 30 * k, 13 * k, '#ffe14d', 800);
 		}
 		const small = (t, x, y, align) => shadowText(ctx, t, x, y, 15 * k, INK, 700, MONO, align);
-		small(`AGL ${Math.round(s.agl)} m`, W - 98 * k, midY + 175 * k, 'right');
-		small(`VS ${s.vs >= 0 ? '+' : ''}${s.vs.toFixed(1)}`, W - 98 * k, midY + 196 * k, 'right');
-		small(`GS ${Math.round(s.groundSpeed)}`, 100 * k, midY + 175 * k, 'left');
+		small(`AGL ${Math.round(s.agl)} m`, W - 143 * k, midY + 168 * k, 'left');
+		small(`VS ${s.vs >= 0 ? '+' : ''}${s.vs.toFixed(1)} m/s`, W - 143 * k, midY + 189 * k, 'left');
+		small(`GS ${Math.round(s.groundSpeed)} km/h`, 143 * k, midY + 168 * k, 'right');
 	}
 	const warn = s.stall ? 'STALL' : s.overspeed ? 'OVERSPEED' : s.pullUp ? 'PULL UP' : s.fuel <= 0 ? 'NO FUEL' : s.engineFail ? 'ENGINE FAILURE' : null;
 	if (warn && Math.floor(time * 4) % 2 === 0) shadowText(ctx, warn, W / 2, H * 0.24, 44 * k, '#ff3b2f', 900);

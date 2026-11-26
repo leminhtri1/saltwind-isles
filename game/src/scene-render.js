@@ -47,6 +47,7 @@ export class SceneRenderer {
 				[P.elevator, hingeX(model, el.y, el.z, -ac.surfaces.elevator * 0.42)],
 				[P.rudder, mat4Compose(model, mat4Translate(0, 0, rz), mat4RotateY(ac.surfaces.rudder * 0.45), mat4Translate(0, 0, -rz))],
 			];
+			if (ac.parts.gear < 100) parts.push([P.gear, model]);
 			for (const [mesh, m] of parts) r.drawMesh(mesh, m, { tint });
 		}
 		const py = HINGES.prop.y, pz = HINGES.prop.z;
@@ -56,10 +57,12 @@ export class SceneRenderer {
 		} else if (!cockpit) r.drawMesh(P.blades, spin, { tint });
 	}
 
-	addLights(eye, right, up) {
+	addLights(eye, right, up, time) {
 		for (const l of this.world.airstrips.lights) {
 			const dist = length(sub(l.pos, eye));
 			let color = l.color;
+			// the "rabbit": a strobe racing along the approach lights toward the threshold, twice a second
+			if (l.rabbit !== null && l.rabbit !== undefined && Math.floor((time * 2 % 1) * 11) === l.rabbit) this.glow.billboard(l.pos, Math.max(6, dist * 0.016), [0.85, 0.92, 1, 1], right, up);
 			if (l.papi) {
 				const h = Math.hypot(eye[0] - l.pos[0], eye[2] - l.pos[2]);
 				const angle = Math.atan2(eye[1] - l.pos[1], h) / DEG;
@@ -148,7 +151,7 @@ export class SceneRenderer {
 				this.glow.quad(b0, b1, [b1[0], b1[1] + 160, b1[2]], [b0[0], b0[1] + 160, b0[2]], [1, 0.5, 0.2, 0.35]);
 			}
 		}
-		this.addLights(camera.eye, right, up);
+		this.addLights(camera.eye, right, up, time);
 		if (effects) effects.draw(this.smoke, this.glow, this.debris, right, up);
 		r.drawSprites(this.debris, { softness: 0.2, fogged: true });
 		r.drawSprites(this.smoke, { softness: 1.2, fogged: true });

@@ -261,12 +261,16 @@ export function drawInstrumentPanel(ctx, W, H, s, tall = false) {
 	bar(ctx, bx + bw * 1.7, by, bw, bh, s.flaps / 2, '#9ad0ff', 'FLP', ['UP', '1', '2'][s.flaps]);
 	bar(ctx, bx + bw * 3.4, by, bw, bh, s.fuel, s.fuel < 0.15 ? '#ff5a3a' : '#f3d27a', 'FUEL', `${Math.round(s.fuelLitres)}`);
 	bar(ctx, bx + bw * 5.1, by, bw, bh, s.damage, s.damage > 0.6 ? '#ff5a3a' : '#ff9a3c', 'DMG', `${Math.round(s.damage * 100)}`);
-	const flags = [['STALL', s.stall, '#ff3b2f'], ['LOW FUEL', s.fuel < 0.15, '#ffb020'], ['BRAKE', s.brakes, '#ffb020'], ['ENGINE', s.engineFail, '#ff3b2f'], ['OVERSPEED', s.overspeed, '#ff3b2f']];
-	const aw = 70 * k, ah = 17 * k;
-	flags.forEach(([t, on, c], i) => {
-		const ax = tall ? x0 + step * 0.2 + i * (aw + 8 * k) : x0 + step * (i + 0.5) - aw / 2;
-		annunciator(ctx, ax, tall ? top + 6 * k : top - 20 * k, aw, ah, t, on, c);
-	});
+	// annunciators: warnings light red or amber; the gear and flap lights also confirm a healthy system
+	const p = s.parts, RED = '#ff3b2f', AMBER = '#ffb020';
+	const flags = [
+		['STALL', s.stall && RED], ['OVERSPEED', s.overspeed && RED], ['LOW FUEL', s.fuel < 0.15 && AMBER],
+		p.engine >= 100 || s.engineFail ? ['ENG FAIL', RED] : p.engine > 55 ? ['ENG ROUGH', AMBER] : ['ENGINE', null],
+		p.gear >= 100 ? ['NO GEAR', RED] : p.gear > 30 ? ['GEAR BENT', AMBER] : ['GEAR DN', '#3ee06a'],
+		p.flaps >= 100 ? ['FLAP JAM', RED] : s.flaps ? [`FLAPS ${s.flaps}`, '#4fb6ff'] : ['FLAPS UP', null], ['BRAKE', s.brakes && AMBER],
+	];
+	const aw = 82 * k, ah = 18 * k, span = step * 5 + R * 2;
+	flags.forEach(([t, c], i) => annunciator(ctx, x0 - R + (i + 0.5) * span / flags.length - aw / 2, tall ? top + 4 * k : top - 21 * k, aw, ah, t, !!c, c || '#000'));
 	ctx.restore();
 	return top;
 }

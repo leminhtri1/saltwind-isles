@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { imageSize } from './cdp.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const kit = resolve(process.argv[2] || 'D:/claude/makefun/kit-new/flight/best-flight-game-20261126-0057-kit');
+const kit = resolve(process.argv[2] || 'D:/claude/makefun/kit-new/flight53/best-flight-game-20261126-0057-kit');
 const problems = [];
 const ok = (msg) => console.log(`ok   ${msg}`);
 const fail = (msg) => { problems.push(msg); console.log(`FAIL ${msg}`); };

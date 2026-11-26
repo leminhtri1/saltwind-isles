@@ -113,7 +113,16 @@ function buildBody() {
 		q([x, 1.42, 2.75], [x, 1.45, 3.5], [x, 1.62, 3.5], [x, 1.6, 2.85], CREAM);
 		q([x, 1.6, 2.85], [x, 1.62, 3.5], [x, 2.15, 3.5], [x, 2.1, 3.05], RED);
 	}
-	// landing gear
+	// spinner
+	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
+	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
+	mb.pop();
+	return mb.build();
+}
+
+/** Spring-steel main legs with spatted wheels and the nose leg: drawn apart so a collapse can remove them. */
+function buildGear() {
+	const mb = new MeshBuilder();
 	for (const s of [-1, 1]) {
 		beam(mb, [s * 0.45, -0.42, -0.55], [s * 1.28, -1.05, -0.55], 0.05, METAL);
 		wheel(mb, s * 1.32, -1.05, -0.55, 0.3, 0.18);
@@ -121,10 +130,6 @@ function buildBody() {
 	}
 	beam(mb, [0, -0.4, -2.55], [0, -1.08, -2.72], 0.05, METAL);
 	wheel(mb, 0, -1.08, -2.72, 0.27, 0.14);
-	// spinner
-	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
-	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
-	mb.pop();
 	return mb.build();
 }
 
@@ -175,6 +180,7 @@ export function buildAircraftMeshes() {
 	const wy = 1.22, zf = -0.08, zt = 0.38;
 	return {
 		body: buildBody(),
+		gear: buildGear(),
 		aileronL: buildSurface(-4.9, -2.85, zf, zt, wy, 0.08, RED),
 		aileronR: buildSurface(2.85, 4.9, zf, zt, wy, 0.08, RED),
 		flapL: buildSurface(-2.85, -0.7, zf, zt, wy, 0.08, [0.9, 0.86, 0.75, 0]),

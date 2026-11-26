@@ -2,7 +2,7 @@
 import { STRIPS, WORLD_HALF, stripDirection } from './world-layout.js';
 
 export class Minimap {
-	constructor(world, size = 256) {
+	constructor(world, size = 512) {
 		this.size = size;
 		const c = document.createElement('canvas');
 		c.width = c.height = size;
@@ -17,8 +17,7 @@ export class Minimap {
 					const t = Math.min(1, -h / 18);
 					col = [40 + (1 - t) * 60, 110 + (1 - t) * 70, 140 + (1 - t) * 30];
 				} else if (h < 2.5) col = [222, 200, 150];
-				else if (h > 320) col = [240, 240, 240];
-				else if (h > 200) col = [150, 135, 120];
+				else if (h > 200) col = [150, 145, 135];
 				else {
 					const f = world.terrain.forestAt(x, z);
 					const shade = 1 - h / 500;

@@ -1,8 +1,10 @@
 // Mission runtime: start a sortie, follow each step (rings, gate, touchdown, crates, mail), grade it.
 import { DEG, length, quatRotate } from './math3d.js';
+import { AIRFRAME } from './flight-model.js';
+import { defaultLoadout } from './loadout.js';
 import { layRingCourse, makeRing, ringCrossing } from './rings.js';
 import { medalFor, scoreLanding } from './landing-score.js';
-import { VILLAGES, findStrip, stripDirection } from './world-layout.js';
+import { VILLAGES, findStrip, stripDirection, stripLocal } from './world-layout.js';
 import { MISSIONS, RING_ANCHORS, approachGeometry, glidePathPoint } from './mission-catalog.js';
 
 export { MISSIONS, approachGeometry, glidePathPoint };
@@ -28,10 +30,11 @@ function flatSpotNear(world, x, z) {
 	return [x, world.terrain.heightAt(x, z), z];
 }
 
-export function startMission(def, world) {
+/** Start a sortie with the chosen loadout {fuel litres, cargo kg}. */
+export function startMission(def, world, loadout = defaultLoadout(def)) {
 	Object.assign(world.wind, def.wind);
 	const run = {
-		def, time: 0, status: 'running', result: null, messages: [], sounds: [], rings: [], gate: null, targets: [],
+		def, loadout, time: 0, status: 'running', result: null, messages: [], sounds: [], rings: [], gate: null, targets: [],
 		crates: [], cratesLeft: 0, ringIndex: 0, targetIndex: 0, stopIndex: 0, holdTimer: 0, firstTouchdown: null, waypoint: null, delivered: [],
 	};
 	run.say = (text, color = '#ffffff', seconds = 2.5) => run.messages.push({ text, color, seconds });
@@ -39,27 +42,28 @@ export function startMission(def, world) {
 		const geo = (run.geo = approachGeometry(def.strip, def.sign));
 		const gatePos = glidePathPoint(geo, def.gate || 750, def.aim);
 		run.gate = makeRing(gatePos, geo.heading, -3.2);
-		run.start = { pos: glidePathPoint(geo, 2500, def.aim), heading: geo.heading * DEG, pitch: DEG, speed: 41, throttle: 0.32, flaps: 1, fuel: 0.5 };
+		run.start = { pos: glidePathPoint(geo, 2500, def.aim), heading: geo.heading * DEG, pitch: DEG, speed: 41, throttle: 0.32, flaps: 1 };
 		run.waypoint = { pos: gatePos, label: 'GATE' };
 	} else if (def.kind === 'rings') {
 		run.rings = layRingCourse(RING_ANCHORS, world.terrain.heightAt);
 		const r0 = run.rings[0], n = r0.normal;
-		run.start = { pos: [r0.pos[0] - n[0] * 650, r0.pos[1] + 10, r0.pos[2] - n[2] * 650], heading: Math.atan2(n[0], -n[2]), speed: 50, throttle: 0.75, fuel: 0.8 };
+		run.start = { pos: [r0.pos[0] - n[0] * 650, r0.pos[1] + 10, r0.pos[2] - n[2] * 650], heading: Math.atan2(n[0], -n[2]), speed: 50, throttle: 0.75 };
 		run.waypoint = { pos: r0.pos, label: 'RING 1' };
 	} else if (def.kind === 'drop') {
 		run.targets = ['kelp', 'harbour', 'emberv'].map((id) => {
 			const v = VILLAGES.find((vv) => vv.id === id);
 			return { name: v.name, pos: flatSpotNear(world, v.x, v.z), done: false, score: 0, dist: null };
 		});
-		run.cratesLeft = 4;
+		run.cratesLeft = Math.round(loadout.cargo / def.cargo.each);
 		const p = [1500, 170, 250], t0 = run.targets[0].pos;
-		run.start = { pos: p, heading: headingTo(p, t0), speed: 46, throttle: 0.6, fuel: 0.7 };
+		run.start = { pos: p, heading: headingTo(p, t0), speed: 46, throttle: 0.6 };
 		run.waypoint = { pos: t0, label: 'DROP' };
 	} else {
 		const port = findStrip('port'), d = stripDirection(port), back = port.length / 2 - 40;
-		run.start = { pos: [port.x - d[0] * back, port.elev + 1.35, port.z - d[2] * back], heading: port.heading * DEG, flaps: 1, fuel: def.fuel || 0.75, onGround: true };
+		run.start = { pos: [port.x - d[0] * back, port.elev + 1.35, port.z - d[2] * back], heading: port.heading * DEG, flaps: 1, onGround: true };
 		if (def.kind === 'mail') run.waypoint = stripMark(findStrip(def.stops[0]));
 	}
+	Object.assign(run.start, { fuel: loadout.fuel / AIRFRAME.fuelCapacity, cargo: loadout.cargo });
 	return run;
 }
 
@@ -101,9 +105,15 @@ function updateLanding(run, ac, world) {
 	const res = scoreLanding(run.firstTouchdown, run.def.strip, run.def.sign, run.def.zone, !!surf.strip && surf.strip.id === run.def.strip);
 	res.lines.unshift(gate.passed ? 'Approach gate threaded' : 'Approach gate missed  (-10)');
 	if (!gate.passed) res.score = Math.max(0, res.score - 10);
+	const stores = run.def.cargo ? Math.floor(run.loadout.cargo / 24) : 0;
+	if (stores && res.fromThreshold !== null) {
+		res.score = Math.min(100, res.score + stores);
+		res.lines.push(`${run.loadout.cargo} kg of medical stores delivered  (+${stores})`);
+	}
 	const onStrip = res.fromThreshold !== null, ok = onStrip && res.score >= 40;
-	const headline = !onStrip ? 'Landed off the strip' : `Landing scored ${res.score} / 100${ok ? '' : ': not good enough'}`;
-	finish(run, ok, { medal: medalFor(res.score), score: res.score, headline, lines: res.lines });
+	const td = run.firstTouchdown, sink = Math.abs(td.vs).toFixed(1);
+	const headline = !onStrip ? 'Landed off the strip' : ok ? `Down at ${sink} m/s, ${Math.round(res.fromThreshold)} m past the threshold, ${Math.abs(td.across).toFixed(1)} m off the line` : `Scored ${res.score} / 100: not good enough to pass`;
+	finish(run, ok, { medal: medalFor(res.score), score: res.score, headline, lines: res.lines, touchdown: run.firstTouchdown, card: res, stop: stripLocal(findStrip(run.def.strip), ac.pos[0], ac.pos[2]) });
 }
 
 /** Crate flight: ballistic, then the canopy opens and it drifts with the wind toward a 7 m/s descent. */
@@ -157,6 +167,7 @@ function updateCrate(run, c, world, dt) {
 function updateDrop(run, ac, world, dt, drop) {
 	if (drop && run.cratesLeft > 0 && !ac.onGround) {
 		run.cratesLeft--;
+		ac.cargo = Math.max(0, ac.cargo - run.def.cargo.each);
 		run.crates.push(newCrate(ac));
 		run.sounds.push('drop');
 		run.say(`Crate away: ${run.cratesLeft} left`, '#ffffff', 1.5);
@@ -179,6 +190,7 @@ function updateMail(run, ac, world, dt) {
 	if (run.holdTimer < 1.5) return;
 	run.holdTimer = 0;
 	run.delivered.push({ name: surf.strip.name, time: run.time });
+	ac.cargo = Math.max(0, ac.cargo - run.loadout.cargo / stops.length);
 	run.sounds.push('ring');
 	if (++run.stopIndex < stops.length) {
 		const s = findStrip(stops[run.stopIndex]);
@@ -186,9 +198,11 @@ function updateMail(run, ac, world, dt) {
 		run.waypoint = stripMark(s);
 		return;
 	}
+	// every 40 kg of freight takes 15 s off the scored time
+	const bonus = run.loadout.cargo / 40 * 15, scored = Math.max(0, run.time - bonus);
 	finish(run, true, {
-		medal: timeMedal(run.time, run.def.medals), headline: `Mail delivered in ${formatTime(run.time)}`,
-		lines: [...run.delivered.map((d) => `${d.name} at ${formatTime(d.time)}`), `Fuel left ${Math.round(ac.fuel)} L, damage ${Math.round(ac.damage)}%`],
+		medal: timeMedal(scored, run.def.medals), headline: `Mail delivered: scored ${formatTime(scored)}`,
+		lines: [...run.delivered.map((d) => `${d.name} at ${formatTime(d.time)}`), `${run.loadout.cargo} kg freight: ${Math.round(bonus)} s off the flown ${formatTime(run.time)}`, `Fuel left ${Math.round(ac.fuel)} L, damage ${Math.round(ac.damage)}%`],
 	});
 }
 
