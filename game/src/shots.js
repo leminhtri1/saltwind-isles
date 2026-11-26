@@ -1,79 +1,98 @@
-// The screenshot scenes behind ?shot=start|play|end. Each one plays the real rules forward from a
-// fresh world for a fixed number of steps, steered by a simple autopilot (look ahead each way the
-// paddle could move, keep clear of blocks, chase the lowest coin when that is safe), so the frame
-// is what a short game really looks like and the same seed always gives the same frame.
-import { FIELD, PLAYER, STEP } from './config.js';
-import { EVENT_OVER, KIND_BLOCK } from './world.js';
-import { SCREEN_OVER, SCREEN_PLAY, SCREEN_TITLE } from './render.js';
+// Screenshot scenes behind ?shot=<name>. Each starts a real mission, places the aircraft and plays
+// the flight model forward a fixed number of steps, so the same URL always gives the same frame:
+// approach (final to Port Saltwind through the gate), rings (mid-course at Gull Rock), drop (a crate
+// under its chute over Kelp Bay), cockpit (the panel on short final) and debrief (a stall and crash).
+import { DEG, quatFromAttitude, quatRotate, scale } from './math3d.js';
+import { MISSIONS, approachGeometry, glidePathPoint } from './missions.js';
 
-const START_SECONDS = 5;
-const PLAY_SECONDS = 26;
-const END_LIMIT_SECONDS = 600;
-/**
- * How far ahead, in seconds, the autopilot checks each way it could move: the play scene's pilot
- * looks well ahead and keeps all its lives; the end scene's looks only a moment ahead, so it is
- * caught out once the blocks speed up, as a hurried player is.
- */
-const HORIZON_PLAY = 0.7;
-const HORIZON_END = 0.25;
-const SAMPLE = 1 / 30;
-const DIRECTIONS = [0, -1, 1];
-/** Extra room, each side, it keeps between the paddle and a block. */
-const MARGIN = 10;
+const FRAME = 1 / 60;
+const idle = { pitch: 0, roll: 0, yaw: 0 };
 
-/** Seconds until moving in `direction` (-1, 0, 1) runs the paddle into a block; Infinity when it never does. */
-function timeToHit(state, direction, horizon) {
-  const player = state.player;
-  for (let t = SAMPLE; t <= horizon; t += SAMPLE) {
-    const x = Math.min(FIELD.width - player.width, Math.max(0, player.x + direction * PLAYER.speed * t));
-    for (let index = 0; index < state.items.length; index += 1) {
-      const item = state.items[index];
-      if (!item.active || item.kind !== KIND_BLOCK) continue;
-      const y = item.y + item.speed * t;
-      if (y + item.height > player.y && y < player.y + player.height && item.x < x + player.width + MARGIN && item.x + item.width > x - MARGIN) return t;
-    }
-  }
-  return Infinity;
+function missionIndex(id) {
+  return MISSIONS.findIndex((m) => m.id === id);
 }
 
-/** Of the safe ways to move, the one toward the lowest coin (or the centre); else the one that is hit last. */
-function autopilot(state, horizon) {
-  const player = state.player;
-  let coin = null;
-  for (let index = 0; index < state.items.length; index += 1) {
-    const item = state.items[index];
-    if (item.active && item.kind !== KIND_BLOCK && (coin === null || item.y > coin.y)) coin = item;
-  }
-  const target = coin === null ? FIELD.width / 2 : coin.x + coin.width / 2;
-  const centre = player.x + player.width / 2;
-  const wanted = target > centre + 8 ? 1 : target < centre - 8 ? -1 : 0;
-  let best = wanted;
-  let bestTime = timeToHit(state, wanted, horizon);
-  for (let index = 0; index < DIRECTIONS.length && bestTime !== Infinity; index += 1) {
-    const time = timeToHit(state, DIRECTIONS[index], horizon);
-    if (time > bestTime) {
-      bestTime = time;
-      best = DIRECTIONS[index];
-    }
-  }
-  return best;
+function place(ac, pos, headingDeg, pitchDeg, bankDeg, speed) {
+  ac.pos = [...pos];
+  ac.q = quatFromAttitude(headingDeg * DEG, pitchDeg * DEG, bankDeg * DEG);
+  ac.vel = scale(quatRotate(ac.q, [0, 0, -1]), speed);
 }
 
-/**
- * Set `world` to the named scene (start, play or end; any other name is start) and return the
- * screen to draw over it and the best score to show.
- */
-export function stageShot(name, world) {
-  world.reset();
-  if (name !== 'play' && name !== 'end') {
-    for (let index = 0; index < START_SECONDS / STEP; index += 1) world.step(STEP, 0, true);
-    return { screen: SCREEN_TITLE, best: 0 };
+function run(api, seconds, input = idle) {
+  for (let t = 0; t < seconds; t += FRAME) {
+    api.simulate(FRAME, input);
+    api.camera.follow(api.game.ac, FRAME, null, api.world.terrain.heightAt);
   }
-  const limit = name === 'end' ? END_LIMIT_SECONDS : PLAY_SECONDS;
-  const horizon = name === 'end' ? HORIZON_END : HORIZON_PLAY;
-  for (let index = 0; index < limit / STEP; index += 1) {
-    if (world.step(STEP, autopilot(world.state, horizon), false) & EVENT_OVER) break;
+}
+
+export function stageShot(name, api) {
+  const { game, camera } = api;
+  game.time = 40;
+  if (name === 'rings') {
+    api.startMissionAt(missionIndex('rings'));
+    const r = game.run;
+    for (let i = 0; i < 6; i++) r.rings[i].passed = true;
+    r.ringIndex = 6;
+    r.time = 71.4;
+    r.waypoint = { pos: r.rings[6].pos, label: 'RING 7' };
+    const ring = r.rings[6];
+    const p = [ring.pos[0] - ring.normal[0] * 230, ring.pos[1] - 4, ring.pos[2] - ring.normal[2] * 230];
+    const heading = Math.atan2(ring.normal[0], -ring.normal[2]) / DEG;
+    place(game.ac, p, heading - 9, 2, -24, 52);
+    game.ac.throttle = 0.8;
+    run(api, 0.5, { pitch: 0.15, roll: 0, yaw: 0 });
+    game.message = { text: 'RING 6 / 14', color: '#ffd36b', left: 1 };
+  } else if (name === 'drop') {
+    api.startMissionAt(missionIndex('drop'));
+    const r = game.run;
+    const t = r.targets[0].pos;
+    // the zone's smoke flare has been burning for a while
+    for (let s = 0; s < 5; s += FRAME) {
+      api.effects.flare(t);
+      api.effects.update(FRAME, api.world.windAt(t, s));
+    }
+    const p = [t[0] + 300, t[1] + 85, t[2] - 210];
+    const heading = Math.atan2(t[0] - p[0], -(t[2] - p[2])) / DEG;
+    place(game.ac, p, heading - 16, -2, 14, 37);
+    game.ac.throttle = 0.38;
+    game.ac.flaps = 1;
+    game.ac.flapAngle = 0.5;
+    // the first crate went out on the previous pass and drifts down under its canopy
+    const f = quatRotate(game.ac.q, [0, 0, -1]);
+    r.crates.push({ pos: [p[0] + f[0] * 75 + f[2] * 26, p[1] - 22, p[2] + f[2] * 75 - f[0] * 26], vel: [-2, -7, 3], t: 4, chute: 1, landed: false, target: 0 });
+    r.cratesLeft = 3;
+    run(api, 0.4, { pitch: 0.05, roll: 0.1, yaw: 0 });
+    game.message = { text: 'Crate away: 3 left', color: '#ffffff', left: 1 };
+  } else if (name === 'debrief') {
+    api.startMissionAt(missionIndex('approach'));
+    const geo = approachGeometry('port', -1);
+    const p = glidePathPoint(geo, -350, 300);
+    place(game.ac, [p[0] - geo.dir[2] * 170, geo.strip.elev + 85, p[2] + geo.dir[0] * 170], geo.heading + 20, 22, 5, 21);
+    game.ac.throttle = 0;
+    game.run.gate.passed = true;
+    for (let t = 0; t < 30 && !game.ac.crashed; t += FRAME) api.simulate(FRAME, { pitch: 1, roll: 0.3, yaw: 0.4 });
+    for (let t = 0; t < 3.5; t += FRAME) {
+      api.simulate(FRAME, idle);
+      camera.orbit(game.ac.crashed ? game.ac.crashed.pos : game.ac.pos, 55, 16, FRAME, 0.12, 14);
+    }
+    api.finishSortie();
+  } else if (name === 'cockpit') {
+    api.startMissionAt(missionIndex('approach'));
+    const geo = approachGeometry('port', -1);
+    game.run.gate.passed = true;
+    game.run.waypoint = { pos: geo.threshold, label: 'THRESHOLD' };
+    place(game.ac, glidePathPoint(geo, 650, 300), geo.heading + 2, 2, -3, 38);
+    game.ac.flaps = 2;
+    game.ac.flapAngle = 1;
+    camera.mode = 'cockpit';
+    run(api, 0.6);
+  } else {
+    // approach: chase view on final, the gate ring ahead and the runway beyond
+    api.startMissionAt(missionIndex('approach'));
+    const geo = approachGeometry('port', -1);
+    const p = glidePathPoint(geo, 1080, 300);
+    place(game.ac, [p[0], p[1] + 16, p[2]], geo.heading - 2, -1, 8, 41);
+    game.ac.throttle = 0.4;
+    run(api, 0.6, { pitch: 0.04, roll: 0, yaw: 0 });
   }
-  const over = world.state.lives === 0;
-  return { screen: over ? SCREEN_OVER : SCREEN_PLAY, best: world.state.score };
 }
