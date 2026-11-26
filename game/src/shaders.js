@@ -43,6 +43,10 @@ float cloudLight(vec3 p) {
 	return lit;
 }
 `;
+const HEAD = `#version 300 es
+precision highp float;
+${COMMON}
+`;
 
 export const LIT_VS = `#version 300 es
 layout(location=0) in vec3 aPos;
@@ -61,10 +65,7 @@ void main() {
 	gl_Position = uViewProj * w;
 }`;
 
-export const LIT_FS = `#version 300 es
-precision highp float;
-${COMMON}
-uniform float uAlpha;
+export const LIT_FS = HEAD + `uniform float uAlpha;
 uniform float uGround;
 uniform vec3 uTint;
 in vec3 vWorld;
@@ -98,10 +99,7 @@ layout(location=0) in vec2 aPos;
 out vec2 vNdc;
 void main() { vNdc = aPos; gl_Position = vec4(aPos, 0.99999, 1.0); }`;
 
-export const SKY_FS = `#version 300 es
-precision highp float;
-${COMMON}
-uniform mat3 uCamBasis;
+export const SKY_FS = HEAD + `uniform mat3 uCamBasis;
 uniform vec2 uLens;
 in vec2 vNdc;
 out vec4 outColor;
@@ -129,10 +127,7 @@ void main() {
 	gl_Position = uViewProj * vec4(aPos, 1.0);
 }`;
 
-export const WATER_FS = `#version 300 es
-precision highp float;
-${COMMON}
-in vec3 vWorld;
+export const WATER_FS = HEAD + `in vec3 vWorld;
 in float vDepth;
 out vec4 outColor;
 void main() {
@@ -184,10 +179,7 @@ void main() {
 	gl_Position = uViewProj * vec4(aPos, 1.0);
 }`;
 
-export const SPRITE_FS = `#version 300 es
-precision highp float;
-${COMMON}
-uniform float uSoftness;
+export const SPRITE_FS = HEAD + `uniform float uSoftness;
 uniform float uFogged;
 uniform float uCloud;
 uniform vec3 uRight;
