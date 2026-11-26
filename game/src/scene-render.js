@@ -4,8 +4,9 @@ import {
 	mat4RotateZ, mat4Scale, mat4Translate, quatRotate, sub,
 } from './math3d.js';
 import { SpriteBatch } from './gl-renderer.js';
-import { HINGES, buildAircraftMeshes } from './aircraft-mesh.js';
+import { HINGES, NAV_LIGHTS, buildAircraftMeshes } from './aircraft-mesh.js';
 import { RING_RADIUS, buildRingMesh } from './rings.js';
+import { drawClouds } from './clouds.js';
 import { buildChute, buildCrate, buildTargetMarker, buildWindsock } from './prop-meshes.js';
 import { SUN_DIR, findStrip, stripDirection } from './world-layout.js';
 
@@ -18,13 +19,20 @@ export class SceneRenderer {
 		const up = (m) => renderer.uploadMesh(m), { airstrips: a, scenery } = world;
 		Object.assign(this, {
 			r: renderer, world, terrain: up(world.terrain.buildMesh()), water: renderer.uploadWater(world.terrain.buildWaterGrid(2)),
-			stripBase: up(a.base), stripPaint: up(a.paint), stripProps: up(a.props), trees: up(scenery.trees), buildings: up(scenery.buildings),
-			clouds: up(world.clouds), ring: up(buildRingMesh()), crate: up(buildCrate()), chute: up(buildChute()), marker: up(buildTargetMarker()),
+			stripBase: up(a.base), stripPaint: up(a.paint), stripProps: up(a.props), trees: up(scenery.trees), buildings: up(scenery.buildings), roads: up(scenery.roads),
+			cloudPuffs: new SpriteBatch(), ring: up(buildRingMesh()), crate: up(buildCrate()), chute: up(buildChute()), marker: up(buildTargetMarker()),
 			windsock: up(buildWindsock()), smoke: new SpriteBatch(), glow: new SpriteBatch(), debris: new SpriteBatch(), identity: mat4Identity(),
 		});
 		this.plane = Object.fromEntries(Object.entries(buildAircraftMeshes()).map(([k, v]) => [k, up(v)]));
 		const port = findStrip('port'), d = stripDirection(port);
 		this.sockPos = [port.x - d[0] * 380 + d[2] * 40, port.elev, port.z - d[2] * 380 - d[0] * 40];
+	}
+
+	navLights(ac, time, right, up) {
+		for (const l of NAV_LIGHTS) {
+			const on = !l.flash || time % 1.2 < 0.12, p = quatRotate(ac.q, l.p);
+			if (on) this.glow.billboard([ac.pos[0] + p[0], ac.pos[1] + p[1], ac.pos[2] + p[2]], l.flash ? 1.1 : 0.5, [...l.c, 0.9], right, up);
+		}
 	}
 
 	drawAircraft(ac, cockpit) {
@@ -83,14 +91,14 @@ export class SceneRenderer {
 		const r = this.r;
 		const view = mat4LookAt(camera.eye, camera.target, camera.up);
 		const proj = mat4Perspective(camera.fov * DEG, aspect, cockpit ? 0.3 : 0.8, 70000);
-		const viewProj = r.beginFrame({ view, proj, camPos: camera.eye, sunDir: SUN_DIR, time, fogDensity: 1 / 6200 });
+		const viewProj = r.beginFrame({ view, proj, camPos: camera.eye, sunDir: SUN_DIR, time, fogDensity: 1 / 7000, clouds: this.world.clouds.shadows });
 		const right = [view[0], view[4], view[8]], up = [view[1], view[5], view[9]];
 		for (const b of [this.smoke, this.glow, this.debris]) b.clear();
 
 		r.drawSky();
-		r.drawMesh(this.terrain, this.identity);
+		r.drawMesh(this.terrain, this.identity, { ground: true });
 		r.drawWater(this.water);
-		for (const [mesh, decal] of [[this.stripBase, 1], [this.stripPaint, 2], [this.stripProps], [this.trees], [this.buildings], [this.clouds]]) r.drawMesh(mesh, this.identity, { decal });
+		for (const [mesh, decal] of [[this.stripBase, 1], [this.stripPaint, 2], [this.roads, 1], [this.stripProps], [this.trees], [this.buildings]]) r.drawMesh(mesh, this.identity, { decal, ground: decal > 0 });
 		const wind = this.world.windAt(this.sockPos, time);
 		const wspeed = Math.hypot(wind[0], wind[2]);
 		const sockHeading = Math.atan2(wind[0], -wind[2]);
@@ -120,6 +128,7 @@ export class SceneRenderer {
 
 		if (ac) {
 			this.drawAircraft(ac, cockpit);
+			if (!cockpit && !ac.crashed) this.navLights(ac, time, right, up);
 			if (!cockpit && !ac.crashed) {
 				const g = Math.max(0, this.world.surfaceAt(ac.pos[0], ac.pos[2]).height);
 				const agl = ac.pos[1] - g;
@@ -144,6 +153,9 @@ export class SceneRenderer {
 		r.drawSprites(this.debris, { softness: 0.2, fogged: true });
 		r.drawSprites(this.smoke, { softness: 1.2, fogged: true });
 		r.drawSprites(this.glow, { additive: true, softness: 2.2 });
+		this.cloudPuffs.clear();
+		drawClouds(this.cloudPuffs, this.world.clouds.puffs, camera.eye, right, up);
+		r.drawSprites(this.cloudPuffs, { cloud: true });
 		return viewProj;
 	}
 }

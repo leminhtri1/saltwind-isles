@@ -2,9 +2,9 @@
 import { cross, mat4Compose, mat4RotateX, mat4RotateY, mat4RotateZ, mat4Translate, normalize, sub } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 
-const CREAM = [0.99, 0.93, 0.78, 0];
-const RED = [0.82, 0.2, 0.13, 0];
-const TEAL = [0.1, 0.42, 0.46, 0];
+const CREAM = [0.98, 0.94, 0.84, 0];
+const RED = [0.78, 0.07, 0.06, 0];
+const TEAL = [0.08, 0.16, 0.24, 0];
 const GLASS = [0.1, 0.16, 0.22, 0.05];
 const DARK = [0.13, 0.13, 0.14, 0];
 const METAL = [0.6, 0.62, 0.64, 0];
@@ -20,6 +20,12 @@ export const HINGES = {
 	rudder: { z: 3.5 },
 	prop: { y: 0.05, z: -3.5 },
 };
+
+/** Navigation lights (body frame): red port tip, green starboard tip, white tail; the fin beacon flashes. */
+export const NAV_LIGHTS = [
+	{ p: [-5.62, 1.22, -0.7], c: [1, 0.12, 0.08] }, { p: [5.62, 1.22, -0.7], c: [0.1, 1, 0.3] },
+	{ p: [0, 0.66, 4.0], c: [1, 1, 1] }, { p: [0, 2.2, 3.3], c: [1, 0.2, 0.1], flash: true },
+];
 
 function beam(mb, a, b, w, color) {
 	const d = normalize(sub(b, a));
@@ -56,26 +62,42 @@ function panel(mb, x0, x1, zf, zt, y, t, top, bottom = top) {
 
 function buildBody() {
 	const mb = new MeshBuilder();
-	const side = (glass) => [CREAM, CREAM, CREAM, CREAM, RED, TEAL, TEAL, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
+	// octagon faces from upper right round the top to lower right: red spine, cream flanks, red cheatline and belly
+	const side = (glass) => [CREAM, RED, RED, CREAM, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
 	const front = (k) => (k === 1 || k === 2 ? GLASS : k === 4 || k === 7 ? RED : k === 5 || k === 6 ? TEAL : CREAM);
 	mb.loft([
 		{ z: -3.35, w: 0.42, h: 0.42, y: 0.05, color: RED },
 		{ z: -2.6, w: 0.56, h: 0.56, y: 0.08, color: RED },
 		{ z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: CREAM, colors: [0, 1, 2, 3, 4, 5, 6, 7].map(front) },
 		{ z: -1.0, w: 0.64, h: 0.84, y: 0.3, color: CREAM, colors: side(true) },
+		{ z: 0.1, w: 0.63, h: 0.82, y: 0.3, color: CREAM, colors: side(true) },
 		{ z: 0.5, w: 0.62, h: 0.8, y: 0.3, color: CREAM, colors: side(false) },
 		{ z: 1.7, w: 0.42, h: 0.52, y: 0.38, color: CREAM, colors: side(false) },
 		{ z: 3.3, w: 0.18, h: 0.26, y: 0.58, color: CREAM, colors: side(false) },
 		{ z: 3.95, w: 0.08, h: 0.14, y: 0.62, color: RED },
 	]);
-	// exhaust and cowl details
-	mb.box(0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
-	mb.box(0, 0.62, -2.5, 0.5, 0.06, 0.6, DARK);
+	// exhaust stacks, cowl louvres, oil-cooler scoop, door seams and a step
+	for (const s of [-1, 1]) mb.box(s * 0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
+	for (let k = 0; k < 4; k++) mb.box(0, 0.63, -2.75 + k * 0.17, 0.42, 0.03, 0.06, DARK);
+	mb.box(0, -0.5, -2.65, 0.36, 0.14, 0.4, DARK);
+	for (const s of [-1, 1]) {
+		mb.box(s * 0.63, 0.32, -0.42, 0.02, 0.9, 0.025, DARK);
+		mb.box(s * 0.63, 0.32, -1.02, 0.02, 0.9, 0.025, DARK);
+		mb.box(s * 0.7, -0.45, -0.75, 0.25, 0.04, 0.16, METAL);
+	}
 	// wing: main panels and red tips
 	const wy = 1.22;
-	panel(mb, -5.6, -4.9, -1.35, -0.08, wy, 0.2, RED);
-	panel(mb, -4.9, 4.9, -1.35, -0.08, wy, 0.2, CREAM, [0.84, 0.8, 0.7, 0]);
-	panel(mb, 4.9, 5.6, -1.35, -0.08, wy, 0.2, RED);
+	const UNDER = [0.84, 0.8, 0.72, 0];
+	panel(mb, -5.6, -4.5, -1.35, -0.08, wy, 0.2, RED);
+	panel(mb, -4.5, -4.2, -1.35, -0.08, wy, 0.2, CREAM, UNDER);
+	panel(mb, -4.2, -3.9, -1.35, -0.08, wy, 0.2, RED);
+	panel(mb, -3.9, 3.9, -1.35, -0.08, wy, 0.2, CREAM, UNDER);
+	panel(mb, 3.9, 4.2, -1.35, -0.08, wy, 0.2, RED);
+	panel(mb, 4.2, 4.5, -1.35, -0.08, wy, 0.2, CREAM, UNDER);
+	panel(mb, 4.5, 5.6, -1.35, -0.08, wy, 0.2, RED);
+	// wing root fairing over the cabin and fuel caps
+	mb.box(0, wy + 0.06, -0.7, 1.3, 0.1, 1.1, CREAM);
+	for (const s of [-1, 1]) mb.box(s * 1.6, wy + 0.11, -0.8, 0.14, 0.03, 0.14, DARK);
 	// fixed trailing strip beside the fuselage
 	panel(mb, -0.7, 0.7, -0.08, 0.35, wy, 0.08, CREAM);
 	// struts
@@ -85,8 +107,12 @@ function buildBody() {
 	beam(mb, [-2.4, wy - 0.1, -0.15], [-0.58, -0.3, -0.2], 0.04, METAL);
 	// horizontal tail and fin
 	panel(mb, -1.9, 1.9, 2.75, 3.45, 0.62, 0.1, CREAM);
-	mb.quad([0, 0.75, 2.4], [0, 0.75, 3.5], [0, 2.15, 3.5], [0, 2.1, 3.05], RED);
-	mb.quad([0, 0.75, 2.4], [0, 2.1, 3.05], [0, 2.15, 3.5], [0, 0.75, 3.5], RED);
+	for (const x of [0.012, -0.012]) {
+		const q = x > 0 ? (a, b, c, d, col) => mb.quad(a, b, c, d, col) : (a, b, c, d, col) => mb.quad(a, d, c, b, col);
+		q([x, 0.75, 2.4], [x, 0.75, 3.5], [x, 1.45, 3.5], [x, 1.42, 2.75], RED);
+		q([x, 1.42, 2.75], [x, 1.45, 3.5], [x, 1.62, 3.5], [x, 1.6, 2.85], CREAM);
+		q([x, 1.6, 2.85], [x, 1.62, 3.5], [x, 2.15, 3.5], [x, 2.1, 3.05], RED);
+	}
 	// landing gear
 	for (const s of [-1, 1]) {
 		beam(mb, [s * 0.45, -0.42, -0.55], [s * 1.28, -1.05, -0.55], 0.05, METAL);
@@ -149,8 +175,8 @@ export function buildAircraftMeshes() {
 	const wy = 1.22, zf = -0.08, zt = 0.38;
 	return {
 		body: buildBody(),
-		aileronL: buildSurface(-4.9, -2.85, zf, zt, wy, 0.08, CREAM),
-		aileronR: buildSurface(2.85, 4.9, zf, zt, wy, 0.08, CREAM),
+		aileronL: buildSurface(-4.9, -2.85, zf, zt, wy, 0.08, RED),
+		aileronR: buildSurface(2.85, 4.9, zf, zt, wy, 0.08, RED),
 		flapL: buildSurface(-2.85, -0.7, zf, zt, wy, 0.08, [0.9, 0.86, 0.75, 0]),
 		flapR: buildSurface(0.7, 2.85, zf, zt, wy, 0.08, [0.9, 0.86, 0.75, 0]),
 		elevator: buildSurface(-1.9, 1.9, 3.45, 3.9, 0.62, 0.07, RED),

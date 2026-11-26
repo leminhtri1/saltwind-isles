@@ -1,20 +1,22 @@
-// Island heightfield: noise shaped by island blobs, flattened under strips, coloured by height and slope.
+// Island heightfield: noise shaped by island blobs, flattened under strips, coloured by height, slope, fields and hollows.
 import { clamp, lerp, lerp3, smoothstep } from './math3d.js';
 import { createNoise2D, fbm } from './noise.js';
 import { MeshBuilder } from './mesh-builder.js';
-import { ISLAND_BLOBS, SEA_FLOOR, STRIPS, TERRAIN_CELLS, WORLD_HALF, WORLD_SEED, stripLocal } from './world-layout.js';
+import { ISLAND_BLOBS, SEA_FLOOR, STRIPS, TERRAIN_CELLS, VILLAGES, WORLD_HALF, WORLD_SEED, stripLocal } from './world-layout.js';
 
 const COLORS = {
-	sand: [0.88, 0.76, 0.52],
-	wetSand: [0.74, 0.62, 0.43],
-	grassLight: [0.58, 0.69, 0.3],
-	grassDark: [0.36, 0.53, 0.22],
-	forest: [0.25, 0.4, 0.18],
-	rock: [0.55, 0.48, 0.42],
-	rockDark: [0.42, 0.36, 0.33],
-	snow: [0.96, 0.95, 0.97],
-	seabed: [0.55, 0.5, 0.36],
+	sand: [0.97, 0.93, 0.8],
+	wetSand: [0.86, 0.8, 0.66],
+	grassLight: [0.36, 0.6, 0.16],
+	grassDark: [0.17, 0.42, 0.12],
+	forest: [0.07, 0.24, 0.09],
+	chalk: [0.95, 0.93, 0.87],
+	chalkShade: [0.82, 0.8, 0.74],
+	rock: [0.6, 0.58, 0.54],
+	rockDark: [0.45, 0.44, 0.42],
+	seabed: [0.9, 0.86, 0.72],
 };
+const FIELDS = [[0.86, 0.76, 0.32], [0.55, 0.74, 0.22], [0.66, 0.5, 0.32], [0.74, 0.8, 0.3], [0.38, 0.6, 0.16]];
 
 export function createTerrain(seed = WORLD_SEED) {
 	const noise = createNoise2D(seed);
@@ -84,22 +86,32 @@ export function createTerrain(seed = WORLD_SEED) {
 		return 2 * e / Math.hypot(dx, 2 * e, dz);
 	}
 
-	function faceColor(h, ny, x, z, jitter) {
+	/** Patchwork crop field colour near a village, or null outside the farmland. */
+	function fieldAt(x, z) {
+		const v = VILLAGES.find((vv) => Math.hypot(x - vv.x, z - vv.z) < vv.spread * 2.6);
+		if (!v || forestAt(x, z) > 0.55) return null;
+		const a = 0.5, u = x * Math.cos(a) + z * Math.sin(a), w = -x * Math.sin(a) + z * Math.cos(a);
+		const i = Math.floor(u / 70), j = Math.floor(w / 46);
+		return FIELDS[((i * 7 + j * 13) % 5 + 5) % 5];
+	}
+
+	function faceColor(h, ny, x, z, jitter, hollow) {
 		const n = noise(x / 90, z / 90);
 		let c;
 		if (h < 0) c = COLORS.seabed;
 		else if (h < 2.2 + n * 1.6) c = h < 0.7 ? COLORS.wetSand : COLORS.sand;
-		else if (h > 330 + n * 40 && ny > 0.55) c = COLORS.snow;
-		else if (ny < 0.74 || h > 250 + n * 40) c = ny < 0.6 || n > 0.2 ? COLORS.rockDark : COLORS.rock;
+		else if (ny < 0.74 && h < 90) c = ny < 0.5 ? COLORS.chalkShade : COLORS.chalk; // sea cliffs
+		else if (ny < 0.7 || h > 300 + n * 40) c = ny < 0.55 || n > 0.2 ? COLORS.rockDark : COLORS.rock;
 		else {
 			const f = forestAt(x, z);
 			const g = clamp(0.5 + noise(x / 160 + 9, z / 160) * 0.6, 0, 1);
-			const meadow = lerp3(COLORS.grassLight, COLORS.grassDark, g);
-			const t = smoothstep(0.35, 0.75, f);
-			c = lerp3(meadow, COLORS.forest, t);
-			if (h < 4.5) c = lerp3(c, COLORS.sand, 0.35);
+			const meadow = (ny > 0.92 && h < 120 && fieldAt(x, z)) || lerp3(COLORS.grassLight, COLORS.grassDark, g);
+			c = lerp3(meadow, COLORS.forest, smoothstep(0.35, 0.7, f));
+			if (h > 200) c = lerp3(c, COLORS.rock, smoothstep(200, 300, h) * 0.7);
+			if (h < 4.5) c = lerp3(c, COLORS.sand, 0.4);
 		}
-		const k = 1 + (jitter - 0.5) * 0.09;
+		// hollows and gullies fall into shade, ridges catch a little more sky
+		const k = (1 + (jitter - 0.5) * 0.09) * clamp(1 - hollow * 0.018, 0.7, 1.08);
 		return [c[0] * k, c[1] * k, c[2] * k, 0];
 	}
 
@@ -120,7 +132,8 @@ export function createTerrain(seed = WORLD_SEED) {
 					const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
 					const nl = Math.hypot(nx, ny, nz);
 					const h = (a[1] + b[1] + c[1]) / 3;
-					const color = faceColor(h, ny / nl, (a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, jitter());
+					const hollow = (at(i - 2, j) + at(i + 3, j) + at(i, j - 2) + at(i, j + 3) + at(i - 2, j - 2) + at(i + 3, j + 3)) / 6 - h;
+					const color = faceColor(h, ny / nl, (a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, jitter(), h > 0 ? hollow : 0);
 					mb.triWorld(a, b, c, color, [nx / nl, ny / nl, nz / nl]);
 				}
 			}

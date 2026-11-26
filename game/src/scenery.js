@@ -1,12 +1,17 @@
-// Trees, villages, airfield buildings and the lighthouse, each also filed as an obstacle.
+// Trees, palms, rocks, villages, roads, the harbour and its boats, the airfield and the lighthouse; solid ones filed as obstacles.
 import { mat4Compose, mat4RotateY, mat4Translate } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 import { createRandom } from './noise.js';
-import { LIGHTHOUSE, STRIPS, VILLAGES, WORLD_HALF, WORLD_SEED, findStrip, stripLocal } from './world-layout.js';
+import { HARBOUR, LIGHTHOUSE, ROADS, STRIPS, VILLAGES, WORLD_HALF, WORLD_SEED, findStrip, stripLocal } from './world-layout.js';
 
 const TRUNK = [0.36, 0.25, 0.17, 0];
-const PINES = [[0.16, 0.33, 0.17, 0], [0.2, 0.38, 0.18, 0], [0.13, 0.29, 0.16, 0]];
-const LEAVES = [[0.33, 0.5, 0.18, 0], [0.42, 0.55, 0.2, 0], [0.55, 0.52, 0.2, 0]];
+const PINES = [[0.07, 0.27, 0.12, 0], [0.1, 0.33, 0.14, 0], [0.06, 0.23, 0.12, 0]];
+const LEAVES = [[0.2, 0.46, 0.12, 0], [0.3, 0.52, 0.14, 0], [0.14, 0.38, 0.1, 0], [0.45, 0.56, 0.16, 0]];
+const FROND = [[0.22, 0.5, 0.14, 0], [0.3, 0.56, 0.16, 0]];
+const STONE = [[0.62, 0.6, 0.57, 0], [0.74, 0.72, 0.67, 0], [0.5, 0.49, 0.47, 0]];
+const HULLS = [[0.85, 0.12, 0.1, 0], [0.1, 0.32, 0.6, 0], [0.96, 0.95, 0.92, 0], [0.1, 0.5, 0.45, 0], [0.95, 0.75, 0.15, 0]];
+const WHITE = [0.97, 0.97, 0.95, 0];
+const WOOD = [0.55, 0.4, 0.26, 0];
 const WALLS = [[0.94, 0.9, 0.82, 0], [0.86, 0.8, 0.7, 0], [0.75, 0.83, 0.86, 0], [0.95, 0.84, 0.64, 0]];
 const ROOFS = [[0.72, 0.3, 0.2, 0], [0.2, 0.48, 0.52, 0], [0.36, 0.38, 0.46, 0], [0.8, 0.55, 0.2, 0]];
 
@@ -52,6 +57,78 @@ function broadleaf(mb, x, y, z, s, rnd) {
 	const c = LEAVES[Math.floor(rnd() * LEAVES.length)];
 	mb.frustum(x, y - 0.5, z, 0.4 * s, y + 3 * s, 0.3 * s, 5, TRUNK);
 	mb.blob(x, y + 4.6 * s, z, 3.2 * s, 2.7 * s, 3.2 * s, c, 3, 6);
+}
+
+function palm(mb, x, y, z, s, rnd) {
+	const lean = (rnd() - 0.5) * 1.6 * s, lz = (rnd() - 0.5) * 1.6 * s, top = [x + lean * 2, y + 9 * s, z + lz * 2];
+	for (let k = 0; k < 3; k++) mb.frustum(x + lean * k * k / 2, y + k * 3 * s, z + lz * k * k / 2, 0.32 * s, y + (k + 1) * 3 * s, 0.26 * s, 5, k % 2 ? TRUNK : [0.5, 0.38, 0.25, 0]);
+	const c = FROND[Math.floor(rnd() * FROND.length)];
+	for (let k = 0; k < 7; k++) {
+		const a = k * 0.9 + rnd(), dx = Math.cos(a), dz = Math.sin(a), L = 4.2 * s, w = 0.8 * s;
+		const mid = [top[0] + dx * L * 0.5, top[1] + 0.5 * s, top[2] + dz * L * 0.5], tip = [top[0] + dx * L, top[1] - 1.6 * s, top[2] + dz * L];
+		mb.quad(top, [mid[0] - dz * w, mid[1], mid[2] + dx * w], tip, [mid[0] + dz * w, mid[1], mid[2] - dx * w], c);
+	}
+}
+
+function rock(mb, x, y, z, s, rnd) {
+	mb.blob(x, y + s * 0.3, z, s * (1 + rnd() * 0.6), s * (0.6 + rnd() * 0.4), s * (0.9 + rnd() * 0.5), STONE[Math.floor(rnd() * STONE.length)], 3, 5);
+}
+
+/** A boat in local space facing -z: pointed hull, deckhouse, and a mast and sail on the sailing ones. */
+function boat(mb, rnd, L) {
+	const hull = HULLS[Math.floor(rnd() * HULLS.length)], w = L * 0.19, top = 0.9, bot = -0.5;
+	const deck = [[-w, top, L * 0.45], [w, top, L * 0.45], [w, top, -L * 0.2], [0, top + 0.2, -L * 0.5], [-w, top, -L * 0.2]];
+	const keel = deck.map(([x, , z]) => [x * 0.55, bot, z * 0.9]);
+	for (let i = 0; i < 5; i++) mb.quad(keel[i], keel[(i + 1) % 5], deck[(i + 1) % 5], deck[i], hull);
+	mb.tri(deck[0], deck[2], deck[1], WOOD);
+	mb.tri(deck[0], deck[4], deck[2], WOOD);
+	mb.tri(deck[4], deck[3], deck[2], WOOD);
+	if (rnd() < 0.5) mb.box(0, top + 0.8, L * 0.12, w * 1.2, 1.6, L * 0.3, WHITE, [0.3, 0.32, 0.35, 0]);
+	else {
+		mb.box(0, top + L * 0.4, -L * 0.1, 0.12, L * 0.8, 0.12, WHITE);
+		mb.tri([0, top + 1, L * 0.3], [0, top + L * 0.75, -L * 0.08], [0, top + 1, -L * 0.08], WHITE);
+		mb.tri([0, top + 1, L * 0.3], [0, top + 1, -L * 0.08], [0, top + L * 0.75, -L * 0.08], WHITE);
+	}
+}
+
+/** Draped road ribbons through the control points, a hair above the ground. */
+function roads(mb, terrain) {
+	for (const pts of ROADS) {
+		const path = [];
+		for (let i = 0; i < pts.length - 1; i++) {
+			const [x0, z0] = pts[i], [x1, z1] = pts[i + 1], n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 10);
+			for (let k = 0; k < n; k++) path.push([x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n]);
+		}
+		path.push(pts[pts.length - 1]);
+		const edge = (i, side) => {
+			const [ax, az] = path[Math.max(0, i - 1)], [bx, bz] = path[Math.min(path.length - 1, i + 1)], l = Math.hypot(bx - ax, bz - az);
+			const x = path[i][0] + (az - bz) / l * side * 3.5, z = path[i][1] + (bx - ax) / l * side * 3.5;
+			return [x, Math.max(0.3, terrain.heightAt(x, z)) + 0.35, z];
+		};
+		for (let i = 0; i < path.length - 1; i++) mb.quad(edge(i, -1), edge(i, 1), edge(i + 1, 1), edge(i + 1, -1), [0.42, 0.41, 0.4, 0]);
+	}
+}
+
+/** The harbour: a plank jetty on piles running out from the village, boats moored along it and more out in the bay. */
+function harbour(mb, rnd) {
+	const { x, z, angle, length } = HARBOUR;
+	mb.push(mat4Compose(mat4Translate(x, 0, z), mat4RotateY(-angle - Math.PI / 2)));
+	mb.box(0, 1.4, -length / 2, 5, 0.4, length, WOOD);
+	mb.box(0, 1.4, -length, 26, 0.4, 5, WOOD);
+	for (let d = 0; d <= length; d += 10) for (const s of [-2.2, 2.2]) mb.box(s, 0, -d, 0.4, 3, 0.4, [0.3, 0.22, 0.15, 0]);
+	for (let k = 0; k < 6; k++) {
+		const side = k % 2 ? 1 : -1, d = 25 + Math.floor(k / 2) * 30;
+		mb.push(mat4Compose(mat4Translate(side * 8, 0, -d), mat4RotateY(Math.PI / 2 + (rnd() - 0.5) * 0.2)));
+		boat(mb, rnd, 9 + rnd() * 5);
+		mb.pop();
+	}
+	mb.pop();
+	for (let k = 0; k < 9; k++) {
+		const a = angle + (rnd() - 0.5) * 2.2, d = length + 80 + rnd() * 900;
+		mb.push(mat4Compose(mat4Translate(x + Math.cos(a) * d, 0, z + Math.sin(a) * d), mat4RotateY(rnd() * 6.3)));
+		boat(mb, rnd, 8 + rnd() * 8);
+		mb.pop();
+	}
 }
 
 function house(mb, rnd, w, d, h) {
@@ -129,24 +206,29 @@ export function buildScenery(terrain) {
 	const obstacles = new ObstacleGrid();
 	const treeList = [];
 
-	for (let n = 0; n < 16000 && treeList.length < 2600; n++) {
+	for (let n = 0; n < 60000 && treeList.length < 7000; n++) {
 		const x = (rnd() * 2 - 1) * WORLD_HALF, z = (rnd() * 2 - 1) * WORLD_HALF;
-		const h = terrain.heightAt(x, z);
-		if (h < 4.5 || h > 260) continue;
-		if (terrain.flatnessAt(x, z) < 0.8) continue;
-		const f = terrain.forestAt(x, z);
-		if (rnd() > (f > 0.5 ? 0.85 : 0.05)) continue;
-		if (nearStrip(x, z, 60)) continue;
-		if (VILLAGES.some((v) => Math.hypot(x - v.x, z - v.z) < v.spread * 0.8)) continue;
-		if (Math.hypot(x - LIGHTHOUSE.x, z - LIGHTHOUSE.z) < 40) continue;
-		const s = 0.8 + rnd() * 0.7;
-		const isPine = h > 60 || rnd() < 0.55;
-		if (isPine) pine(trees, x, h, z, s, rnd);
-		else broadleaf(trees, x, h, z, s, rnd);
-		const top = h + (isPine ? 9.5 : 7.5) * s;
+		const h = terrain.heightAt(x, z), flat = terrain.flatnessAt(x, z);
+		if (h < 1.5 || h > 300) continue;
+		if (nearStrip(x, z, 60) || Math.hypot(x - LIGHTHOUSE.x, z - LIGHTHOUSE.z) < 40) continue;
+		if (flat < 0.8) {
+			// boulders tumble down the cliffs and steep slopes
+			if (rnd() < 0.25) rock(trees, x, h, z, 1.5 + rnd() * 3, rnd);
+			continue;
+		}
+		const shore = h < 9, f = terrain.forestAt(x, z);
+		if (rnd() > (shore ? 0.5 : f > 0.5 ? 0.9 : 0.05)) continue;
+		if (VILLAGES.some((v) => Math.hypot(x - v.x, z - v.z) < v.spread * (shore ? 0.5 : 0.8))) continue;
+		if (h < 3 && rnd() < 0.5) { rock(trees, x, h, z, 0.8 + rnd() * 1.5, rnd); continue; }
+		const s = 0.8 + rnd() * 0.7, kind = shore ? 2 : h > 70 || rnd() < 0.45 ? 0 : 1;
+		[pine, broadleaf, palm][kind](trees, x, h, z, s, rnd);
+		const top = h + [9.5, 7.5, 9][kind] * s;
 		treeList.push({ x, z, top });
 		obstacles.add({ x, z, r: 2.4 * s, top, base: h, kind: 'tree' });
 	}
+	const roadMesh = new MeshBuilder();
+	roads(roadMesh, terrain);
+	harbour(buildings, rnd);
 
 	for (const v of VILLAGES) {
 		const angle = rnd() * Math.PI;
@@ -170,5 +252,5 @@ export function buildScenery(terrain) {
 	obstacles.add({ x: LIGHTHOUSE.x, z: LIGHTHOUSE.z, r: 4.5, top: lhTop, base: lh, kind: 'lighthouse' });
 	airfield(buildings, obstacles);
 
-	return { trees: trees.build(), buildings: buildings.build(), obstacles, treeCount: treeList.length, lighthouseLamp: [LIGHTHOUSE.x, lhTop - 4, LIGHTHOUSE.z] };
+	return { trees: trees.build(), buildings: buildings.build(), roads: roadMesh.build(), obstacles, treeCount: treeList.length, lighthouseLamp: [LIGHTHOUSE.x, lhTop - 4, LIGHTHOUSE.z] };
 }

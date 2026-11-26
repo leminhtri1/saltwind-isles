@@ -1,13 +1,13 @@
-// Hand-placed geography: islands, airstrips, villages, lighthouse, golden-hour sun, world size.
+// Hand-placed geography: islands, airstrips, villages, harbour, lighthouse, late-morning sun, world size.
 import { DEG } from './math3d.js';
 
 export const WORLD_SEED = 7;
 export const WORLD_HALF = 4200; // terrain spans -WORLD_HALF..WORLD_HALF metres on X and Z
-export const TERRAIN_CELLS = 210;
+export const TERRAIN_CELLS = 300;
 export const SEA_FLOOR = -20;
 
-// Low golden-hour sun from the south-east, warm light and long shadows.
-const SUN_AZ = 128 * DEG, SUN_EL = 13 * DEG;
+// High late-morning sun from the south-south-east: crisp colour, short shadows.
+const SUN_AZ = 152 * DEG, SUN_EL = 52 * DEG;
 export const SUN_DIR = [Math.sin(SUN_AZ) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_AZ) * Math.cos(SUN_EL)];
 
 /** Island building blocks: broad plateaus carry the strips and villages, peaks raise the hills. */
@@ -54,6 +54,15 @@ export const VILLAGES = [
 ];
 
 export const LIGHTHOUSE = { name: 'Lantern Point', x: 2860, z: 690 };
+
+/** Saltwind Harbour's jetty: its root on the shore, the direction it runs out to sea (radians from +x toward +z), its length. */
+export const HARBOUR = { x: -905, z: 655, angle: 2.1, length: 110 };
+
+/** Road control points [x, z]: from the airfield to Kelp Bay and along the coast to the harbour. */
+export const ROADS = [
+	[[180, 520], [260, 640], [240, 780], [330, 920], [380, 1060]],
+	[[180, 520], [20, 580], [-180, 560], [-400, 640], [-620, 610], [-880, 650]],
+];
 
 /** Unit vector along a strip's landing heading. */
 export function stripDirection(strip) {

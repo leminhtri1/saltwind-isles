@@ -86,12 +86,12 @@ export class GLRenderer {
 	}
 
 	/** Start a frame: viewport, clear and the shared camera/sun uniforms. */
-	beginFrame({ view, proj, camPos, sunDir, time, fogDensity }) {
+	beginFrame({ view, proj, camPos, sunDir, time, fogDensity, clouds }) {
 		const gl = this.gl;
 		const viewProj = mat4Multiply(proj, view);
 		// the sky rebuilds each pixel's view ray from the camera basis and the lens
 		const basis = [view[0], view[4], view[8], view[1], view[5], view[9], -view[2], -view[6], -view[10]];
-		this.frame = { viewProj, camPos, sunDir, time, fogDensity, basis, lens: [1 / proj[0], 1 / proj[5]] };
+		this.frame = { viewProj, camPos, sunDir, time, fogDensity, clouds, basis, lens: [1 / proj[0], 1 / proj[5]], right: basis.slice(0, 3), up: basis.slice(3, 6) };
 		gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 		gl.clearColor(0.9, 0.75, 0.6, 1);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -106,6 +106,7 @@ export class GLRenderer {
 		gl.uniform3fv(prog.loc('uCamPos'), f.camPos);
 		gl.uniform1f(prog.loc('uFogDensity'), f.fogDensity);
 		gl.uniform1f(prog.loc('uTime'), f.time);
+		gl.uniform4fv(prog.loc('uClouds'), f.clouds);
 		const vp = prog.loc('uViewProj');
 		if (vp) gl.uniformMatrix4fv(vp, false, f.viewProj);
 		return prog;
@@ -124,14 +125,15 @@ export class GLRenderer {
 		gl.enable(gl.DEPTH_TEST);
 	}
 
-	/** Draw a lit mesh. Options: alpha (blended when < 1), tint, decal (polygon offset level). */
-	drawMesh(mesh, model, { alpha = 1, tint = [1, 1, 1], decal = 0 } = {}) {
+	/** Draw a lit mesh. Options: alpha (blended when < 1), tint, decal (polygon offset level), ground detail. */
+	drawMesh(mesh, model, { alpha = 1, tint = [1, 1, 1], decal = 0, ground = false } = {}) {
 		if (!mesh || !mesh.count) return;
 		const gl = this.gl;
 		const prog = this.use(this.lit);
 		gl.uniformMatrix4fv(prog.loc('uModel'), false, model);
 		gl.uniform1f(prog.loc('uAlpha'), alpha);
 		gl.uniform3fv(prog.loc('uTint'), tint);
+		gl.uniform1f(prog.loc('uGround'), ground ? 1 : 0);
 		if (alpha < 1) {
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -157,13 +159,16 @@ export class GLRenderer {
 		gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_INT, 0);
 	}
 
-	/** Draw a sprite batch: additive glows or alpha-blended puffs. */
-	drawSprites(batch, { additive = false, softness = 1.5, fogged = false, depthTest = true } = {}) {
+	/** Draw a sprite batch: additive glows, alpha-blended puffs, or sunlit cloud puffs. */
+	drawSprites(batch, { additive = false, softness = 1.5, fogged = false, cloud = false } = {}) {
 		if (!batch.count) return;
 		const gl = this.gl;
 		const prog = this.use(this.sprite);
 		gl.uniform1f(prog.loc('uSoftness'), softness);
 		gl.uniform1f(prog.loc('uFogged'), fogged ? 1 : 0);
+		gl.uniform1f(prog.loc('uCloud'), cloud ? 1 : 0);
+		gl.uniform3fv(prog.loc('uRight'), this.frame.right);
+		gl.uniform3fv(prog.loc('uUp'), this.frame.up);
 		gl.bindVertexArray(this.spriteVao);
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.spriteBuf);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(batch.data), gl.DYNAMIC_DRAW);
@@ -171,9 +176,7 @@ export class GLRenderer {
 		if (additive) gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 		else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 		gl.depthMask(false);
-		if (!depthTest) gl.disable(gl.DEPTH_TEST);
 		gl.drawArrays(gl.TRIANGLES, 0, batch.count);
-		gl.enable(gl.DEPTH_TEST);
 		gl.depthMask(true);
 		gl.disable(gl.BLEND);
 	}
