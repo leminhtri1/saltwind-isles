@@ -4,7 +4,7 @@
 import { cross, mat4Compose, mat4RotateX, mat4RotateY, mat4RotateZ, mat4Translate, normalize, sub } from './math3d.js';
 import { MeshBuilder } from './mesh-builder.js';
 
-const CREAM = [0.96, 0.92, 0.82, 0];
+const CREAM = [0.99, 0.93, 0.78, 0];
 const RED = [0.82, 0.2, 0.13, 0];
 const TEAL = [0.1, 0.42, 0.46, 0];
 const GLASS = [0.1, 0.16, 0.22, 0.05];

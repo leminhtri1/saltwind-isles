@@ -1,6 +1,6 @@
 // A small raw-WebGL2 renderer: compiles the shader programs, uploads meshes into vertex arrays and
 // draws the sky, lit meshes, the sea and batches of camera-facing sprites (glows, smoke, shadows).
-import { mat4Invert, mat4Multiply } from './math3d.js';
+import { mat4Multiply } from './math3d.js';
 import { LIT_FS, LIT_VS, SKY_FS, SKY_VS, SPRITE_FS, SPRITE_VS, WATER_FS, WATER_VS } from './shaders.js';
 
 function compile(gl, type, src) {
@@ -121,7 +121,9 @@ export class GLRenderer {
   beginFrame({ view, proj, camPos, sunDir, time, fogDensity }) {
     const gl = this.gl;
     const viewProj = mat4Multiply(proj, view);
-    this.frame = { viewProj, camPos, sunDir, time, fogDensity, invViewProj: mat4Invert(viewProj) };
+    // the sky rebuilds each pixel's view ray from the camera basis and the lens
+    const basis = [view[0], view[4], view[8], view[1], view[5], view[9], -view[2], -view[6], -view[10]];
+    this.frame = { viewProj, camPos, sunDir, time, fogDensity, basis, lens: [1 / proj[0], 1 / proj[5]] };
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0.9, 0.75, 0.6, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -144,7 +146,8 @@ export class GLRenderer {
   drawSky() {
     const gl = this.gl;
     const prog = this.use(this.sky);
-    gl.uniformMatrix4fv(prog.loc('uInvViewProj'), false, this.frame.invViewProj);
+    gl.uniformMatrix3fv(prog.loc('uCamBasis'), false, this.frame.basis);
+    gl.uniform2fv(prog.loc('uLens'), this.frame.lens);
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
     gl.bindVertexArray(this.skyVao);

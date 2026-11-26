@@ -69,7 +69,7 @@ void main() {
   vec3 n = normalize(vNormal);
   if (!gl_FrontFacing) n = -n;
   float diff = max(dot(n, uSunDir), 0.0);
-  vec3 amb = mix(vec3(0.3, 0.26, 0.28), vec3(0.42, 0.5, 0.68), n.y * 0.5 + 0.5);
+  vec3 amb = mix(vec3(0.3, 0.26, 0.28), vec3(0.5, 0.55, 0.68), n.y * 0.5 + 0.5);
   vec3 base = vColor.rgb * uTint;
   vec3 v = normalize(uCamPos - vWorld);
   float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0) * 0.18;
@@ -87,12 +87,12 @@ void main() { vNdc = aPos; gl_Position = vec4(aPos, 0.99999, 1.0); }`;
 export const SKY_FS = `#version 300 es
 precision highp float;
 ${COMMON}
-uniform mat4 uInvViewProj;
+uniform mat3 uCamBasis;
+uniform vec2 uLens;
 in vec2 vNdc;
 out vec4 outColor;
 void main() {
-  vec4 p = uInvViewProj * vec4(vNdc, 1.0, 1.0);
-  vec3 dir = normalize(p.xyz / p.w - uCamPos);
+  vec3 dir = normalize(uCamBasis * vec3(vNdc * uLens, 1.0));
   vec3 col = dir.y < 0.0 ? fogColor(dir) : skyColor(dir);
   float s = dot(dir, uSunDir);
   col += vec3(1.0, 0.92, 0.75) * smoothstep(0.99955, 0.9998, s) * 1.6;
@@ -136,7 +136,7 @@ void main() {
     vec2 q = p * f + vec2(t * 0.05, -t * 0.035) * (1.0 + float(i));
     float e = 0.35;
     float h0 = vnoise(q), hx = vnoise(q + vec2(e, 0.0)), hz = vnoise(q + vec2(0.0, e));
-    g += vec2(hx - h0, hz - h0) / e * 0.3 * fade;
+    g += vec2(hx - h0, hz - h0) / e * (i == 0 ? 0.07 : 0.16) * fade;
   }
   float swell = clamp(1.0 - dist / 2200.0, 0.0, 1.0);
   g += vec2(0.6, 0.25) * cos(dot(p, vec2(0.028, 0.012)) + t * 0.9) * 0.25 * swell;

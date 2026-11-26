@@ -9,54 +9,27 @@ import {
 import { GEAR_HEIGHT } from './aircraft-mesh.js';
 
 export const AIRFRAME = {
-  mass: 950,
-  wingArea: 16.2,
-  maxThrust: 3300,
-  thrustFadeSpeed: 96,
-  cl0: 0.28,
-  clAlpha: 4.9,
-  flapCl: 0.45,
-  stallAlpha: 15 * DEG,
-  cd0: 0.027,
-  induced: 0.05,
-  flapCd: 0.045,
-  fuelCapacity: 90,
-  neverExceed: 74,
-  maxG: 4.4,
+  mass: 950, wingArea: 16.2, maxThrust: 3300, thrustFadeSpeed: 96, cl0: 0.28, clAlpha: 4.9, flapCl: 0.45, stallAlpha: 15 * DEG,
+  cd0: 0.027, induced: 0.05, flapCd: 0.045, fuelCapacity: 90, neverExceed: 74, maxG: 4.4,
 };
-
 const G = 9.81;
 
 export function createAircraft({ pos, heading = 0, pitch = 0, bank = 0, speed = 0, throttle = 0, flaps = 0, fuel = 1, onGround = false } = {}) {
   const q = quatFromAttitude(heading, pitch, bank);
-  const fwd = quatRotate(q, [0, 0, -1]);
   return {
-    pos: [...pos], vel: scale(fwd, speed), q,
-    rates: { roll: 0, pitch: 0, yaw: 0 },
-    throttle, flaps, flapAngle: flaps / 2, brakes: false,
-    fuel: fuel * AIRFRAME.fuelCapacity, damage: 0, engineOn: true,
-    onGround, crashed: null, time: 0,
-    alpha: 0, beta: 0, airspeed: speed, gLoad: 1, stalled: false, stallWarning: false, overspeed: false,
-    rpm: throttle > 0 ? 700 + 1900 * throttle : 0, propAngle: 0,
-    surfaces: { aileron: 0, elevator: 0, rudder: 0 },
-    lastStall: null, wingDrop: 1, touchdown: null, groundKind: null, events: [],
-    maxG: 1, refuelling: false,
+    pos: [...pos], vel: scale(quatRotate(q, [0, 0, -1]), speed), q, rates: { roll: 0, pitch: 0, yaw: 0 }, throttle, flaps, flapAngle: flaps / 2,
+    brakes: false, fuel: fuel * AIRFRAME.fuelCapacity, damage: 0, engineOn: true, onGround, crashed: null, time: 0, alpha: 0, beta: 0,
+    airspeed: speed, gLoad: 1, maxG: 1, stalled: false, stallWarning: false, overspeed: false, rpm: throttle > 0 ? 700 + 1900 * throttle : 0,
+    propAngle: 0, surfaces: { aileron: 0, elevator: 0, rudder: 0 }, lastStall: null, wingDrop: 1, touchdown: null, events: [], refuelling: false,
   };
 }
 
+/** Freeze the aircraft and record how it hit: speed, sink, attitude, and the stall or failure behind it. */
 function crash(ac, cause, kind) {
   const att = attitudeOf(ac.q);
   ac.crashed = {
-    cause, kind,
-    speedKmh: length(ac.vel) * 3.6,
-    vs: ac.vel[1],
-    pitch: att.pitch / DEG,
-    bank: att.bank / DEG,
-    pos: [...ac.pos],
-    time: ac.time,
-    stall: ac.lastStall && ac.time - ac.lastStall.time < 10 ? ac.lastStall : null,
-    fuelEmpty: ac.fuel <= 0,
-    engineOut: !ac.engineOn,
+    cause, kind, speedKmh: length(ac.vel) * 3.6, vs: ac.vel[1], pitch: att.pitch / DEG, bank: att.bank / DEG, pos: [...ac.pos], time: ac.time,
+    stall: ac.lastStall && ac.time - ac.lastStall.time < 10 ? ac.lastStall : null, fuelEmpty: ac.fuel <= 0, engineOut: !ac.engineOn,
   };
   ac.events.push({ type: 'crash', info: ac.crashed });
 }
@@ -77,17 +50,13 @@ export function stepAircraft(ac, input, world, dt) {
   if (ac.crashed) return;
   const A = AIRFRAME;
   ac.time += dt;
-  const fwd = quatRotate(ac.q, [0, 0, -1]);
-  const up = quatRotate(ac.q, [0, 1, 0]);
-  const right = quatRotate(ac.q, [1, 0, 0]);
+  const fwd = quatRotate(ac.q, [0, 0, -1]), up = quatRotate(ac.q, [0, 1, 0]), right = quatRotate(ac.q, [1, 0, 0]);
   const air = sub(ac.vel, world.windAt(ac.pos, ac.time));
   const V = length(air);
   const u = dot(air, fwd), w = dot(air, up), s = dot(air, right);
   const alpha = V > 2 ? Math.atan2(-w, Math.max(u, 0.5)) : 0;
   const beta = V > 2 ? Math.atan2(s, Math.max(u, 0.5)) : 0;
-  ac.alpha = alpha;
-  ac.beta = beta;
-  ac.airspeed = V;
+  Object.assign(ac, { alpha, beta, airspeed: V });
 
   // flaps travel slowly between notches (0, 1, 2)
   ac.flapAngle += clamp(ac.flaps / 2 - ac.flapAngle, -dt * 0.7, dt * 0.7);
@@ -195,8 +164,7 @@ function groundContact(ac, input, world, dt, lift) {
   if (lowest > groundY + 0.05) {
     if (ac.onGround) ac.events.push({ type: 'liftoff' });
     ac.onGround = false;
-    ac.groundKind = null;
-    return;
+        return;
   }
   const att = attitudeOf(ac.q);
   const speed = length(ac.vel);
@@ -237,7 +205,6 @@ function groundContact(ac, input, world, dt, lift) {
     ac.events.push({ type: 'touchdown', info: td });
   }
   ac.onGround = true;
-  ac.groundKind = surf.kind;
 
   // sit on the wheels, keep wings level, nose between the nose wheel and full rotation
   if (wheelY < groundY) ac.pos[1] += groundY - wheelY;

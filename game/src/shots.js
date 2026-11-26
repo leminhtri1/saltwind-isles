@@ -38,7 +38,7 @@ export function stageShot(name, api) {
     const ring = r.rings[6];
     const p = [ring.pos[0] - ring.normal[0] * 230, ring.pos[1] - 4, ring.pos[2] - ring.normal[2] * 230];
     const heading = Math.atan2(ring.normal[0], -ring.normal[2]) / DEG;
-    place(game.ac, p, heading - 9, 2, -24, 52);
+    place(game.ac, p, heading - 9, 2, 22, 52);
     game.ac.throttle = 0.8;
     run(api, 0.5, { pitch: 0.15, roll: 0, yaw: 0 });
     game.message = { text: 'RING 6 / 14', color: '#ffd36b', left: 1 };
@@ -90,8 +90,8 @@ export function stageShot(name, api) {
     // approach: chase view on final, the gate ring ahead and the runway beyond
     api.startMissionAt(missionIndex('approach'));
     const geo = approachGeometry('port', -1);
-    const p = glidePathPoint(geo, 1080, 300);
-    place(game.ac, [p[0], p[1] + 16, p[2]], geo.heading - 2, -1, 8, 41);
+    const p = glidePathPoint(geo, 1000, 300);
+    place(game.ac, [p[0], p[1] + 12, p[2]], geo.heading - 2, -1, 8, 41);
     game.ac.throttle = 0.4;
     run(api, 0.6, { pitch: 0.04, roll: 0, yaw: 0 });
   }
