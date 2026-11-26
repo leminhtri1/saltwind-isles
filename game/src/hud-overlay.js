@@ -1,4 +1,4 @@
-// Head-up layer: SPD/ALT tapes, HDG tape, mission card, waypoint marker, flight-path marker, drop reticle, warnings.
+// Head-up layer: SPD/ALT tapes, HDG tape, mission card, waypoint marker, drop reticle, warnings.
 import { clamp, projectToScreen } from './math3d.js';
 import { FONT, MONO, line, panel, poly, shadowText, text } from './canvas-kit.js';
 
@@ -71,18 +71,6 @@ function waypointMarker(ctx, W, H, viewProj, wp, ac, panelTop) {
 	shadowText(ctx, label, ex, ey - 26, 15, PINK, 800);
 }
 
-function flightPathMarker(ctx, W, H, viewProj, ac) {
-	const v = ac.vel, sp = Math.hypot(...v), p = sp > 8 && projectToScreen(viewProj, ac.pos.map((c, i) => c + v[i] / sp * 400), W, H);
-	if (!p) return;
-	Object.assign(ctx, { strokeStyle: ACCENT, lineWidth: 2 });
-	ctx.beginPath();
-	ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
-	ctx.stroke();
-	line(ctx, p.x - 17, p.y, p.x - 7, p.y);
-	line(ctx, p.x + 7, p.y, p.x + 17, p.y);
-	line(ctx, p.x, p.y - 7, p.x, p.y - 13);
-}
-
 export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) {
 	const k = H / 800, midY = Math.min(336, panelTop / k - 170);
 	W /= k;
@@ -95,7 +83,6 @@ export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) 
 	missionCard(ctx, hud.title, hud.lines, hud.clock);
 	if (!ac.crashed) {
 		if (hud.waypoint) waypointMarker(ctx, W, H, viewProj, hud.waypoint, ac, panelTop / k);
-		flightPathMarker(ctx, W, H, viewProj, ac);
 		const aim = hud.dropAim && projectToScreen(viewProj, hud.dropAim, W, H);
 		if (aim) {
 			Object.assign(ctx, { strokeStyle: '#ffe14d', lineWidth: 2.5 });

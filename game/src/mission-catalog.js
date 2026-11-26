@@ -42,19 +42,13 @@ export const MISSIONS = [
 ];
 
 export const RING_ANCHORS = [
-	{ x: 1300, z: 180, agl: 70 }, { x: 2000, z: 420, agl: 60 }, { x: 2600, z: 460, agl: 75 }, { x: 3050, z: -120, agl: 60 },
-	{ x: 2950, z: -900, agl: 70 }, { x: 2450, z: -1300, agl: 60 }, { x: 1850, z: -2050, agl: 70 }, { x: 2250, z: -2700, agl: 85 },
-	{ x: 3000, z: -2550, agl: 70 }, { x: 3150, z: -1750, agl: 60 }, { x: 1350, z: -1500, agl: 70 }, { x: 450, z: -950, agl: 90 },
-	{ x: -150, z: -350, agl: 80 }, { x: 350, z: 330, agl: 45 },
-];
+	[1300, 180, 70], [2000, 420, 60], [2600, 460, 75], [3050, -120, 60], [2950, -900, 70], [2450, -1300, 60], [1850, -2050, 70],
+	[2250, -2700, 85], [3000, -2550, 70], [3150, -1750, 60], [1350, -1500, 70], [450, -950, 90], [-150, -350, 80], [350, 330, 45],
+].map(([x, z, agl]) => ({ x, z, agl }));
 
 export function approachGeometry(stripId, sign) {
-	const s = findStrip(stripId);
-	const d0 = stripDirection(s);
-	const d = [d0[0] * sign, 0, d0[2] * sign];
-	const threshold = [s.x - d[0] * s.length / 2, s.elev, s.z - d[2] * s.length / 2];
-	const heading = ((s.heading + (sign < 0 ? 180 : 0)) % 360);
-	return { strip: s, dir: d, threshold, heading };
+	const s = findStrip(stripId), d = stripDirection(s).map((v) => v * sign);
+	return { strip: s, dir: d, threshold: [s.x - d[0] * s.length / 2, s.elev, s.z - d[2] * s.length / 2], heading: (s.heading + (sign < 0 ? 180 : 0)) % 360 };
 }
 
 export function glidePathPoint(geo, dist, aim) {

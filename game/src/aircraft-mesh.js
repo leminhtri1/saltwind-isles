@@ -1,6 +1,6 @@
 // The Kittiwake bush plane: lofted fuselage, strut-braced high wing, moving surfaces, spatted gear, propeller.
 import { cross, mat4Compose, mat4RotateX, mat4RotateY, mat4RotateZ, mat4Translate, normalize, sub } from './math3d.js';
-import { MeshBuilder } from './mesh-builder.js';
+import { meshOf as mesh } from './mesh-builder.js';
 
 const CREAM = [0.98, 0.94, 0.84, 0], RED = [0.78, 0.07, 0.06, 0], NAVY = [0.08, 0.16, 0.24, 0], GLASS = [0.1, 0.16, 0.22, 0.05];
 const DARK = [0.13, 0.13, 0.14, 0], METAL = [0.6, 0.62, 0.64, 0], UNDER = [0.84, 0.8, 0.72, 0], FLAP = [0.9, 0.86, 0.75, 0];
@@ -13,12 +13,6 @@ export const NAV_LIGHTS = [
 	{ p: [-5.62, 1.22, -0.7], c: [1, 0.12, 0.08] }, { p: [5.62, 1.22, -0.7], c: [0.1, 1, 0.3] },
 	{ p: [0, 0.66, 4.0], c: [1, 1, 1] }, { p: [0, 2.2, 3.3], c: [1, 0.2, 0.1], flash: true },
 ];
-
-const mesh = (draw) => {
-	const mb = new MeshBuilder();
-	draw(mb);
-	return mb.build();
-};
 
 function beam(mb, a, b, w) {
 	const d = normalize(sub(b, a)), u = normalize(cross(d, [0, 0, 1])), v = cross(d, u);

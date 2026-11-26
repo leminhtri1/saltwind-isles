@@ -19,23 +19,15 @@ function hash2(ix, iy, seed) {
 
 export function createNoise2D(seed) {
 	return function noise(x, y) {
-		const ix = Math.floor(x), iy = Math.floor(y);
-		const fx = x - ix, fy = y - iy;
-		const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-		const a = hash2(ix, iy, seed), b = hash2(ix + 1, iy, seed);
-		const c = hash2(ix, iy + 1, seed), d = hash2(ix + 1, iy + 1, seed);
-		const top = a + (b - a) * sx, bottom = c + (d - c) * sx;
-		return (top + (bottom - top) * sy) * 2 - 1;
+		const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+		const [a, b, c, d] = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([i, j]) => hash2(ix + i, iy + j, seed));
+		const top = a + (b - a) * sx;
+		return (top + (c + (d - c) * sx - top) * sy) * 2 - 1;
 	};
 }
 
-export function fbm(noise, x, y, octaves = 4, lacunarity = 2.03, gain = 0.5) {
+export function fbm(noise, x, y, octaves = 4) {
 	let sum = 0, amp = 1, freq = 1, norm = 0;
-	for (let i = 0; i < octaves; i++) {
-		sum += noise(x * freq, y * freq) * amp;
-		norm += amp;
-		amp *= gain;
-		freq *= lacunarity;
-	}
+	for (let i = 0; i < octaves; i++, norm += amp, amp /= 2, freq *= 2.03) sum += noise(x * freq, y * freq) * amp;
 	return sum / norm;
 }

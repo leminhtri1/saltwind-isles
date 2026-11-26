@@ -10,29 +10,17 @@ const SUN_AZ = 152 * DEG, SUN_EL = 52 * DEG;
 export const SUN_DIR = [Math.sin(SUN_AZ) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_AZ) * Math.cos(SUN_EL)];
 
 export const ISLAND_BLOBS = [
-	{ kind: 'plateau', x: 150, z: 320, r: 1350, h: 36 },
-	{ kind: 'plateau', x: -650, z: -250, r: 1250, h: 34 },
-	{ kind: 'plateau', x: 650, z: -550, r: 900, h: 30 },
-	{ kind: 'peak', x: -850, z: -950, r: 1050, h: 470 },
-	{ kind: 'peak', x: -150, z: -1350, r: 650, h: 210 },
-	{ kind: 'peak', x: -1500, z: -200, r: 600, h: 150 },
-	{ kind: 'plateau', x: 2280, z: -1820, r: 760, h: 38 },
-	{ kind: 'peak', x: 2620, z: -2250, r: 520, h: 190 },
-	{ kind: 'plateau', x: -2250, z: 1950, r: 880, h: 36 },
-	{ kind: 'peak', x: -2700, z: 2350, r: 560, h: 230 },
-	{ kind: 'plateau', x: 2700, z: 820, r: 470, h: 48 },
-	{ kind: 'peak', x: 2850, z: 700, r: 260, h: 40 },
-	{ kind: 'peak', x: -450, z: -2750, r: 420, h: 95 },
-	{ kind: 'plateau', x: 1300, z: 2350, r: 430, h: 34 },
-	{ kind: 'peak', x: -3050, z: -1150, r: 560, h: 160 },
-	{ kind: 'plateau', x: 3200, z: -350, r: 280, h: 32 },
-	{ kind: 'peak', x: 900, z: 1650, r: 200, h: 46 },
-];
+	['plateau', 150, 320, 1350, 36], ['plateau', -650, -250, 1250, 34], ['plateau', 650, -550, 900, 30], ['peak', -850, -950, 1050, 470],
+	['peak', -150, -1350, 650, 210], ['peak', -1500, -200, 600, 150], ['plateau', 2280, -1820, 760, 38], ['peak', 2620, -2250, 520, 190],
+	['plateau', -2250, 1950, 880, 36], ['peak', -2700, 2350, 560, 230], ['plateau', 2700, 820, 470, 48], ['peak', 2850, 700, 260, 40],
+	['peak', -450, -2750, 420, 95], ['plateau', 1300, 2350, 430, 34], ['peak', -3050, -1150, 560, 160], ['plateau', 3200, -350, 280, 32],
+	['peak', 900, 1650, 200, 46],
+].map(([kind, x, z, r, h]) => ({ kind, x, z, r, h }));
 
 export const STRIPS = [
-	{ id: 'port', name: 'Port Saltwind', x: 150, z: 360, heading: 80, length: 1200, width: 36, elev: 9, surface: 'asphalt', lights: true },
-	{ id: 'gull', name: 'Gull Rock', x: 2200, z: -1760, heading: 35, length: 440, width: 20, elev: 15, surface: 'grass', lights: false },
-	{ id: 'ember', name: 'Ember Key', x: -2180, z: 1880, heading: 125, length: 520, width: 20, elev: 12, surface: 'grass', lights: false },
+	{ id: 'port', name: 'Port Saltwind', x: 150, z: 360, heading: 80, length: 1200, width: 36, elev: 9, surface: 'asphalt' },
+	{ id: 'gull', name: 'Gull Rock', x: 2200, z: -1760, heading: 35, length: 440, width: 20, elev: 15, surface: 'grass' },
+	{ id: 'ember', name: 'Ember Key', x: -2180, z: 1880, heading: 125, length: 520, width: 20, elev: 12, surface: 'grass' },
 ];
 
 export const VILLAGES = [

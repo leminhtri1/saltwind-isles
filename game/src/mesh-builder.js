@@ -95,3 +95,9 @@ export class MeshBuilder {
 		return { positions: f(this.positions), normals: f(this.normals), colors: f(this.colors), count: this.positions.length / 3 };
 	}
 }
+
+export function meshOf(draw) {
+	const mb = new MeshBuilder();
+	draw(mb);
+	return mb.build();
+}
