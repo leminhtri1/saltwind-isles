@@ -28,7 +28,13 @@ function run(api, seconds, input = idle) {
 export function stageShot(name, api) {
   const { game, camera } = api;
   game.time = 40;
-  if (name === 'rings') {
+  if (name === 'title') {
+    camera.orbitAngle = 2.2;
+    for (let t = 0; t < 1; t += FRAME) {
+      api.simulate(FRAME, { ...idle, throttleSet: 0.05 });
+      camera.orbit(game.ac.pos, 24, 3, FRAME, 0.1, -1.8, 10);
+    }
+  } else if (name === 'rings') {
     api.startMissionAt(missionIndex('rings'));
     const r = game.run;
     for (let i = 0; i < 6; i++) r.rings[i].passed = true;

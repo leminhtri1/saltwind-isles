@@ -213,7 +213,7 @@ function updateTitle(dt) {
     return;
   }
   simulate(dt, { ...IDLE, throttleSet: 0.05 });
-  camera.orbit(game.ac.pos, 22, 5, dt, 0.12);
+  camera.orbit(game.ac.pos, 24, 3, dt, 0.1, -1.8, 10);
 }
 
 function updateState(dt) {

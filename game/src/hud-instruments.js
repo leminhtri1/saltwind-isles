@@ -239,8 +239,8 @@ export function drawInstrumentPanel(ctx, W, H, s, tall = false) {
   ctx.strokeStyle = 'rgba(255,220,170,0.25)';
   ctx.lineWidth = 2;
   ctx.stroke();
-  const R = (tall ? 78 : 62) * k, cy = top + (tall ? 128 : 92) * k, step = R * 2.62;
-  const x0 = W / 2 - step * 2.5 - 60 * k;
+  const R = (tall ? 70 : 62) * k, cy = top + (tall ? 128 : 92) * k, step = R * 2.62;
+  const x0 = W / 2 - step * 2.5 - R;
   const gauges = [
     (x) => airspeed(ctx, x, cy, R, s.airspeed), (x) => attitude(ctx, x, cy, R, s.pitch, s.bank),
     (x) => altimeter(ctx, x, cy, R, s.alt), (x) => headingDial(ctx, x, cy, R, s.heading, s.bearing),

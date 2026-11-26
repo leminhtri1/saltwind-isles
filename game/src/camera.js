@@ -62,11 +62,12 @@ export class FlightCamera {
   }
 
   /** Slow circle around a point (title screen, wreck). */
-  orbit(center, radius, height, dt, speed = 0.08, lift = 0) {
+  orbit(center, radius, height, dt, speed = 0.08, lift = 0, side = 0) {
     this.orbitAngle += dt * speed;
-    const a = this.orbitAngle;
-    this.eye = [center[0] + Math.cos(a) * radius, center[1] + height, center[2] + Math.sin(a) * radius];
-    this.target = [center[0], center[1] + lift, center[2]];
+    const a = this.orbitAngle, c = Math.cos(a), s = Math.sin(a);
+    this.eye = [center[0] + c * radius, center[1] + height, center[2] + s * radius];
+    // `side` slides the subject off centre (to the right of the frame when positive)
+    this.target = [center[0] - s * side, center[1] + lift, center[2] + c * side];
     this.up = [0, 1, 0];
     this.fov = 55;
   }

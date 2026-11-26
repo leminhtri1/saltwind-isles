@@ -65,14 +65,17 @@ export function drawTitle(ctx, W, H, selected, best, time) {
     drawMedal(ctx, x + rw - 30 * k, y + rh / 2 + 4 * k, 13 * k, best[m.id] || null);
     return { x, y, w: rw, h: rh, index: i };
   });
-  const m = MISSIONS[selected], bx = x + rw + 30 * k, bw = Math.min(460 * k, W - bx - 40 * k);
-  card(ctx, bx, y0, bw, 200 * k);
-  text(ctx, m.title, bx + 22 * k, y0 + 20 * k, 24 * k, '#ffd36b', 800, FONT, 'left', 'top');
+  const m = MISSIONS[selected], bx = x + rw + 30 * k, by = 470 * k, bw = Math.min(520 * k, W - bx - 40 * k);
+  card(ctx, bx, by, bw, 184 * k);
+  text(ctx, m.title, bx + 22 * k, by + 18 * k, 24 * k, '#ffd36b', 800, FONT, 'left', 'top');
   ctx.font = `500 ${Math.round(18 * k)}px ${FONT}`;
-  wrapText(ctx, m.brief, bw - 44 * k).forEach((l, i) => text(ctx, l, bx + 22 * k, y0 + (62 + i * 26) * k, 18 * k, '#e8eef2', 500, FONT, 'left', 'top'));
-  text(ctx, 'ENTER or click to fly', bx + 22 * k, y0 + 160 * k, 18 * k, Math.floor(time * 2) % 2 ? '#ffffff' : '#ffd36b', 800, FONT, 'left', 'top');
-  card(ctx, bx, y0 + 220 * k, bw, 262 * k);
-  controlsList(ctx, y0 + 236 * k, k, bx + 22 * k, bx + 22 * k + bw * 0.48, 21 * k, 'left');
+  wrapText(ctx, m.brief, bw - 44 * k).forEach((l, i) => text(ctx, l, bx + 22 * k, by + (58 + i * 25) * k, 18 * k, '#e8eef2', 500, FONT, 'left', 'top'));
+  text(ctx, 'ENTER or click to fly', bx + 22 * k, by + 146 * k, 18 * k, Math.floor(time * 2) % 2 ? '#ffffff' : '#ffd36b', 800, FONT, 'left', 'top');
+  const keys = CONTROLS_HELP.map(([key, what]) => `${key.split('  or ')[0]} ${what.split(' (')[0].toLowerCase()}`).join('   ·   ');
+  panel(ctx, 0, H - 44 * k, W, 44 * k, 0, 'rgba(5, 10, 16, 0.7)');
+  ctx.font = `600 ${Math.round(14 * k)}px ${FONT}`;
+  const size = Math.min(14 * k, (13 * k * (W - 40 * k)) / ctx.measureText(keys).width);
+  text(ctx, keys, W / 2, H - 22 * k, size, '#dfe7ec', 600);
   return rows;
 }
 

@@ -1,6 +1,6 @@
 // Capture the game's screenshots: serve game/, open each `?shot=` scene listed in shots.json in
 // headless Chrome, wait for window.__shotReady and save a JPEG no larger than 200 KB.
-//   node tools/shoot.mjs [--out dir] [--only name]
+//   node tools/shoot.mjs [--out dir] [--only name] [--query '?shot=x' --name x.jpg]
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +13,8 @@ const outDir = resolve(opt('--out') || join(root, 'screenshots'));
 const only = opt('--only');
 const LIMIT = 200 * 1024;
 
-const shots = JSON.parse(readFileSync(join(root, 'shots.json'), 'utf8')).filter((s) => !only || s.name.includes(only));
+const query = opt('--query');
+const shots = query ? [{ name: opt('--name') || 'adhoc.jpg', query }] : JSON.parse(readFileSync(join(root, 'shots.json'), 'utf8')).filter((s) => !only || s.name.includes(only));
 mkdirSync(outDir, { recursive: true });
 const { server, port } = await serveDir(join(root, 'game'));
 const chrome = await launchChrome({ width: 1280, height: 800 });
