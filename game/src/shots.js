@@ -28,7 +28,7 @@ export function stageShot(name, { game, camera, world, simulate, startMissionAt 
 		fly(0.5, { pitch: 0.02, roll: -0.05, yaw: 0 });
 	} else if (name === 'drop') {
 		const run = start('drop'), t = run.targets[0].pos, along = (from, deg, r, y) => [from[0] + Math.sin(deg * DEG) * r, y, from[2] - Math.cos(deg * DEG) * r];
-		place(along(t, 6, 280, t[1] + 72), 205, -1, -10, 36, { throttle: 0.45, flaps: 1, fuel: 47, cargo: 135 });
+		place(along(t, 2, 280, t[1] + 72), 205, -1, -10, 36, { throttle: 0.45, flaps: 1, fuel: 47, cargo: 135 });
 		run.crates.push({ ...newCrate(ac()), pos: along(ac().pos, 191, 70, t[1] + 64), vel: [1, -7, 1], t: 6, chute: 1 });
 		run.cratesLeft--;
 		run.time = 96;

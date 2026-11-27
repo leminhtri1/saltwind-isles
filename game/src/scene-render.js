@@ -29,8 +29,8 @@ export class SceneRenderer {
 			[cockpit ? P.cockpit : P.body, model], [P.aileronL, hinge(wt, a)], [P.aileronR, hinge(wt, -a)], [P.flapL, hinge(wt, f)], [P.flapR, hinge(wt, f)],
 			[P.elevator, hinge(el, -S.elevator * 0.42)], [P.rudder, about(model, [0, 0, rudder.z], mat4RotateY(S.rudder * 0.45))],
 		];
-		if (ac.parts.gear < 100 && !cockpit) parts.push([P.gear, model]);
-		for (const [mesh, m] of parts) this.r.drawMesh(mesh, m, { tint });
+		if (ac.parts.gear < 100) parts.push([P.gear, model]);
+		for (const [mesh, m] of cockpit ? parts.slice(0, 1) : parts) this.r.drawMesh(mesh, m, { tint });
 		if (ac.rpm > 500 && !ac.crashed) this.r.drawMesh(P.disc, model, { alpha: 0.28 });
 		else this.r.drawMesh(P.blades, about(model, [0, prop.y, prop.z], mat4RotateZ(ac.propAngle)), { tint });
 		if (ac.crashed || cockpit) return;
