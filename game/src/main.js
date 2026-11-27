@@ -1,5 +1,5 @@
 // Saltwind Isles entry point: title, flight and debrief loop at a fixed physics step; ?shot=<name> stages a screenshot.
-import { attitudeOf, length } from './math3d.js';
+import { attitudeOf, clamp, length } from './math3d.js';
 import { GLRenderer } from './gl-renderer.js';
 import { createWorld } from './world.js';
 import { SceneRenderer } from './scene-render.js';
@@ -39,9 +39,7 @@ function parkedAircraft() {
 }
 game.ac = parkedAircraft();
 
-function toTitle() {
-	Object.assign(game, { state: 'title', ac: parkedAircraft(), run: null });
-}
+const toTitle = () => Object.assign(game, { state: 'title', ac: parkedAircraft(), run: null });
 
 function startMissionAt(index) {
 	const def = MISSIONS[index], run = startMission(def, world, { ...loadoutFor(def) });
@@ -53,9 +51,7 @@ function startMissionAt(index) {
 const NOTES = { 'engine-out': ['ENGINE FAILURE: glide to a strip', '#ff5a3a', 4], 'fuel-out': ['Fuel exhausted: engine stopped', '#ff5a3a', 4], 'tail-strike': ['Tail strike!', '#ff9a3c', 2] };
 const key = (...codes) => codes.some((c) => controls.consume(c));
 
-function say(text, color = '#ffffff', seconds = 2.5) {
-	game.message = { text, color, left: seconds };
-}
+const say = (text, color = '#fff', left = 2.5) => (game.message = { text, color, left });
 
 function handleEvents(ac, run) {
 	for (const e of ac.events) {
@@ -63,7 +59,7 @@ function handleEvents(ac, run) {
 			const r = sinkRating(e.info.vs), strength = Math.min(2, Math.abs(e.info.vs) / 1.5);
 			effects.touchdown([ac.pos[0], ac.pos[1] - 1.35, ac.pos[2]], e.info.kind !== 'runway', strength);
 			audio.play('touchdown', Math.min(1.5, 0.4 + strength));
-			say(`${r.label} touchdown  ${Math.abs(e.info.vs).toFixed(1)} m/s`, r.points >= 33 ? '#7dffa8' : r.points >= 22 ? '#ffffff' : '#ffb02e');
+			say(`${r.label} touchdown  ${Math.abs(e.info.vs).toFixed(1)} m/s`, r.points >= 33 ? '#7dffa8' : r.points >= 22 ? '#fff' : '#ffb02e');
 		} else if (e.type === 'crash') {
 			effects.crash(ac.pos, e.info.kind === 'water');
 			audio.play('crash');
@@ -87,9 +83,9 @@ function handleEvents(ac, run) {
 function simulate(dt, input, actions = {}) {
 	const ac = game.ac, run = game.run;
 	if (input.throttleSet != null) ac.throttle = input.throttleSet;
-	ac.throttle = Math.max(0, Math.min(1, ac.throttle + (input.throttleDelta || 0)));
+	ac.throttle = clamp(ac.throttle + (input.throttleDelta || 0), 0, 1);
 	ac.brakes = !!input.brakes;
-	ac.flaps = Math.max(0, Math.min(2, ac.flaps + (actions.flapsDown ? 1 : 0) - (actions.flapsUp ? 1 : 0)));
+	ac.flaps = clamp(ac.flaps + !!actions.flapsDown - !!actions.flapsUp, 0, 2);
 	let drop = !!actions.drop;
 	for (game.accumulator += dt; game.accumulator >= STEP; game.accumulator -= STEP, drop = false) {
 		stepAircraft(ac, input, world, STEP);

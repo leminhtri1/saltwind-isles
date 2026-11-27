@@ -4,7 +4,7 @@ import { formatTime } from './missions.js';
 import { performance } from './loadout.js';
 import { AIRFRAME } from './flight-model.js';
 import { WORLD_HALF } from './world-layout.js';
-import { FONT, SERIF, gradient, line, panel, poly, text, wrapText } from './canvas-kit.js';
+import { FONT, SERIF, gradient, line, panel, poly, text, textTL, wrapText } from './canvas-kit.js';
 import { KEYS, card, drawMedal, tile } from './screens.js';
 
 const KIND = { landing: ['LANDING', '#7dd3ff'], rings: ['RING COURSE', '#ffd36b'], drop: ['SUPPLY DROP', '#ff9a5c'], mail: ['MAIL RUN', '#b7f07a'], free: ['EXPLORE', '#d2c2ff'] };
@@ -60,7 +60,7 @@ function routeChart(ctx, minimap, def, x, y, s) {
 }
 
 function loadBar(ctx, x, y, w, label, value, frac, color, keys) {
-	text(ctx, label, x, y, 14, DIM, 800, FONT, 'left', 'top');
+	textTL(ctx, label, x, y, 14, DIM, 800);
 	text(ctx, keys, x + w, y, 12, '#6f8794', 700, FONT, 'right', 'top');
 	const button = (bx, t) => {
 		panel(ctx, bx, y + 22, 30, 30, 6, 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0.3)');
@@ -96,16 +96,16 @@ export function drawSortieBoard(ctx, W, H, { selected, best, time, loadout, mini
 
 	const def = MISSIONS[selected], bx = 512, bw = Math.min(W - bx - 36, 740), px = 538, right = bx + bw - 26;
 	card(ctx, bx, 40, bw, 676);
-	text(ctx, 'SORTIE BRIEFING', px, 62, 13, DIM, 800, FONT, 'left', 'top');
-	text(ctx, def.title, px, 82, 32, GOLD, 800, FONT, 'left', 'top');
+	textTL(ctx, 'SORTIE BRIEFING', px, 62, 13, DIM, 800);
+	textTL(ctx, def.title, px, 82, 32, GOLD, 800);
 	chip(ctx, right, 62, def.kind);
 	ctx.font = `500 17px ${FONT}`;
-	wrapText(ctx, def.brief, bw - 52).forEach((l, i) => text(ctx, l, px, 130 + i * 24, 17, '#e3ebef', 500, FONT, 'left', 'top'));
+	wrapText(ctx, def.brief, bw - 52).forEach((l, i) => textTL(ctx, l, px, 130 + i * 24, 17, '#e3ebef', 500));
 	routeChart(ctx, minimap, def, px, 190, 300);
-	text(ctx, `WIND ${String(def.wind.fromDeg).padStart(3, '0')}° ${Math.round(def.wind.speed * 3.6)} KM/H${def.wind.gust > 0.3 ? ', GUSTING' : ''}`, px, 500, 13, DIM, 800, FONT, 'left', 'top');
+	textTL(ctx, `WIND ${String(def.wind.fromDeg).padStart(3, '0')}° ${Math.round(def.wind.speed * 3.6)} KM/H${def.wind.gust > 0.3 ? ', GUSTING' : ''}`, px, 500, 13, DIM, 800);
 
 	const lx = px + 326, lw = right - lx, perf = performance(loadout), A = AIRFRAME, c = def.cargo;
-	text(ctx, 'LOADOUT', lx, 190, 15, '#fff', 900, FONT, 'left', 'top');
+	textTL(ctx, 'LOADOUT', lx, 190, 15, '#fff', 900);
 	const [fm, fp] = loadBar(ctx, lx, 220, lw, 'FUEL', `${loadout.fuel} L  ·  ${Math.round(loadout.fuel * A.fuelKgPerLitre)} kg`, loadout.fuel / A.fuelCapacity, '#e8b23a', 'A / D');
 	hit(fm, { fuel: -1 });
 	hit(fp, { fuel: 1 });
@@ -113,7 +113,7 @@ export function drawSortieBoard(ctx, W, H, { selected, best, time, loadout, mini
 		const [cm, cp] = loadBar(ctx, lx, 290, lw, c.label, c.each ? `${loadout.cargo / c.each} × ${c.each} kg` : `${loadout.cargo} kg`, loadout.cargo / A.maxCargo, '#5fb8ff', 'Q / E');
 		hit(cm, { cargo: -1 });
 		hit(cp, { cargo: 1 });
-	} else text(ctx, 'No cargo on this sortie', lx, 312, 14, '#6f8794', 700, FONT, 'left', 'top');
+	} else textTL(ctx, 'No cargo on this sortie', lx, 312, 14, '#6f8794', 700);
 	const tw = (lw - 10) / 2, red = '#ff8a6b';
 	tile(ctx, lx, 366, tw, 'TAKE-OFF WEIGHT', String(Math.round(perf.mass)), 'kg', perf.mass > 1050 ? red : INK);
 	tile(ctx, lx + tw + 10, 366, tw, 'STALL, CLEAN', String(Math.round(perf.stallKmh)), 'km/h', INK);
@@ -122,11 +122,11 @@ export function drawSortieBoard(ctx, W, H, { selected, best, time, loadout, mini
 
 	ctx.strokeStyle = 'rgba(255,255,255,0.15)';
 	line(ctx, px, 574, right, 574);
-	text(ctx, 'MEDALS', px, 588, 13, DIM, 800, FONT, 'left', 'top');
-	text(ctx, medalTargets(def), px, 610, 16, INK, 700, FONT, 'left', 'top');
-	text(ctx, 'YOUR BEST', px, 646, 13, DIM, 800, FONT, 'left', 'top');
+	textTL(ctx, 'MEDALS', px, 588, 13, DIM, 800);
+	textTL(ctx, medalTargets(def), px, 610, 16, INK, 700);
+	textTL(ctx, 'YOUR BEST', px, 646, 13, DIM, 800);
 	drawMedal(ctx, px + 102, 656, 13, best[def.id]);
-	text(ctx, best[def.id] ? best[def.id].toUpperCase() : 'NOT YET FLOWN', px + 124, 648, 15, INK, 800, FONT, 'left', 'top');
+	textTL(ctx, best[def.id] ? best[def.id].toUpperCase() : 'NOT YET FLOWN', px + 124, 648, 15, INK, 800);
 	panel(ctx, right - 230, 632, 230, 58, 12, Math.floor(time * 2) % 2 ? '#ffd36b' : '#ffc23a');
 	text(ctx, 'TAKE OFF  ⏎', right - 115, 662, 22, '#1b1208', 900);
 	hit({ x: right - 230, y: 632, w: 230, h: 58 }, { go: true });

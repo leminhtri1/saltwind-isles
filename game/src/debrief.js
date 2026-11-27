@@ -1,6 +1,6 @@
 // The debrief after a sortie: a touchdown score card with its runway diagram, the result lines, the crash explained, and a damage diagram.
 import { findStrip } from './world-layout.js';
-import { FONT, line, panel, poly, text, wrapText } from './canvas-kit.js';
+import { FONT, line, panel, poly, text, textTL, wrapText } from './canvas-kit.js';
 import { card, drawMedal, tile } from './screens.js';
 import { sinkRating } from './landing-score.js';
 
@@ -11,7 +11,7 @@ const FAILED = { gear: 'COLLAPSED', flaps: 'JAMMED', engine: 'SEIZED', airframe:
 function damageDiagram(ctx, x, y, w, ac) {
 	const p = ac.crashed ? { engine: 100, gear: 100, flaps: 100, airframe: 100 } : ac.parts, cx = x + w / 2, cy = y + 120, s = w / 12.5;
 	const shape = (pts, d) => poly(ctx, pts.map(([u, v]) => [cx + u * s, cy + v * s]), health(d), '#000');
-	text(ctx, 'AIRCRAFT CONDITION', x, y, 13, DIM, 800, FONT, 'left', 'top');
+	textTL(ctx, 'AIRCRAFT CONDITION', x, y, 13, DIM, 800);
 	shape([[-5.6, -1.4], [5.6, -1.4], [5.6, 0], [-5.6, 0]], p.airframe);
 	for (const m of [1, -1]) shape([[m * 0.7, 0], [m * 2.85, 0], [m * 2.85, 0.45], [m * 0.7, 0.45]], p.flaps);
 	shape([[-0.6, -1.8], [0.6, -1.8], [0.45, 1.7], [0.12, 3.9], [-0.12, 3.9], [-0.45, 1.7]], p.airframe);
@@ -25,7 +25,7 @@ function damageDiagram(ctx, x, y, w, ac) {
 		text(ctx, `${Math.round(d)}%  ${d >= 100 ? FAILED[part] : d >= 50 ? 'DAMAGED' : d >= 20 ? 'WORN' : 'OK'}`, x + w, ry, 14, health(d), 800, FONT, 'right');
 	});
 	const worst = Math.max(...Object.values(p));
-	if (!ac.crashed && worst > 0) text(ctx, `Strip repair: about ${Math.ceil(worst / 4)} s stopped`, x, y + 340, 13, DIM, 700, FONT, 'left', 'top');
+	if (!ac.crashed && worst > 0) textTL(ctx, `Strip repair: about ${Math.ceil(worst / 4)} s stopped`, x, y + 340, 13, DIM, 700);
 }
 
 function touchdownDiagram(ctx, x, y, w, def, card, td, stop) {
@@ -61,10 +61,10 @@ export function drawDebrief(ctx, W, H, def, result, report, ac) {
 	ctx.save();
 	ctx.setTransform(k, 0, 0, k, (W - 1280 * k) / 2, 0);
 	card(ctx, 140, 34, 1000, 640);
-	text(ctx, `${def.title.toUpperCase()}  ·  DEBRIEF`, 170, 58, 13, DIM, 800, FONT, 'left', 'top');
-	text(ctx, report ? 'CRASHED' : c ? `LANDING ${result.score} / 100` : result.success ? 'MISSION COMPLETE' : 'MISSION FAILED', 170, 78, 38, report ? '#ff6b4f' : result.success ? GOOD : '#ffb02e', 900, FONT, 'left', 'top');
+	textTL(ctx, `${def.title.toUpperCase()}  ·  DEBRIEF`, 170, 58, 13, DIM, 800);
+	textTL(ctx, report ? 'CRASHED' : c ? `LANDING ${result.score} / 100` : result.success ? 'MISSION COMPLETE' : 'MISSION FAILED', 170, 78, 38, report ? '#ff6b4f' : result.success ? GOOD : '#ffb02e', 900);
 	ctx.font = `700 19px ${FONT}`;
-	wrapText(ctx, (report || result).headline || '', 560).forEach((l, i) => text(ctx, l, 170, 130 + i * 24, 19, '#fff6e2', 700, FONT, 'left', 'top'));
+	wrapText(ctx, (report || result).headline || '', 560).forEach((l, i) => textTL(ctx, l, 170, 130 + i * 24, 19, '#fff6e2', 700));
 	if (!report) {
 		drawMedal(ctx, 1070, 110, 34, result.medal);
 		text(ctx, result.medal ? result.medal.toUpperCase() : 'NO MEDAL', 1070, 160, 13, DIM, 800);
@@ -82,7 +82,7 @@ export function drawDebrief(ctx, W, H, def, result, report, ac) {
 	ctx.font = `600 16px ${FONT}`;
 	for (const l of lines.slice(0, 8)) {
 		const m = l.match(/^(.*?)\s*\(([+-]\d+)\)$/);
-		for (const part of wrapText(ctx, m ? m[1] : l, 530)) text(ctx, part, 170, (y += 22) - 22, 16, INK, 600, FONT, 'left', 'top');
+		for (const part of wrapText(ctx, m ? m[1] : l, 530)) textTL(ctx, part, 170, (y += 22) - 22, 16, INK, 600);
 		if (m) text(ctx, m[2], 760, y - 22, 17, m[2] === '+0' ? '#ff8a6b' : GOOD, 800, FONT, 'right', 'top');
 		y += 5;
 	}

@@ -30,10 +30,10 @@ export class FlightCamera {
 		if (this.mode === 'cockpit') {
 			this.eye = add(ac.pos, quatRotate(ac.q, [0, 1.5, -0.4]));
 			const cy = Math.cos(this.lookYaw), sy = Math.sin(this.lookYaw);
-			const local = [-sy * Math.cos(this.lookPitch), Math.sin(this.lookPitch) - 0.25, -cy * Math.cos(this.lookPitch)];
+			const local = [-sy * Math.cos(this.lookPitch), Math.sin(this.lookPitch) - 0.33, -cy * Math.cos(this.lookPitch)];
 			this.target = add(this.eye, quatRotate(ac.q, local));
 			this.up = acUp;
-			this.fov = 74;
+			this.fov = 64;
 			return;
 		}
 		const flat = normalize([fwd[0], 0, fwd[2]]);

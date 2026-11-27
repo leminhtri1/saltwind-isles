@@ -36,14 +36,13 @@ function panel(mb, x0, x1, zf, zt, y, t, top, bottom = top) {
 	}
 }
 
-function buildNose(mb) {
-	const top = [RED, CREAM, CREAM, RED, RED, RED, RED, RED];
-	mb.loft([{ z: -3.35, w: 0.42, h: 0.42, y: 0.05, color: RED, colors: top }, { z: -2.6, w: 0.56, h: 0.56, y: 0.08, colors: top }, { z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: DARK }]);
-	for (let k = 0; k < 4; k++) mb.box(0, 0.63, -2.75 + k * 0.17, 0.42, 0.03, 0.06, DARK);
+function buildNose(mb, tail = []) {
+	const colors = [...'rrrcrrrccrrrrrcc'].map((c) => (c > 'q' ? RED : CREAM));
+	mb.loft([{ z: -3.4, w: 0.36, h: 0.36, y: 0.05, color: DARK, colors }, { z: -3.15, w: 0.5, h: 0.5, y: 0.07, colors }, { z: -2.5, w: 0.6, h: 0.62, y: 0.12, colors }, { z: -1.7, w: 0.63, h: 0.72, y: 0.2, color: DARK, colors }, ...tail], 16);
 	mb.box(0, -0.5, -2.65, 0.36, 0.14, 0.4, DARK);
-	for (const s of [-1, 1]) mb.box(s * 0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
-	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
-	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
+	for (const s of [-1, 1]) mb.box(s * 0.5, -0.3, -2.3, 0.1, 0.1, 0.5, DARK);
+	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.4), mat4RotateX(-Math.PI / 2)));
+	mb.frustum(0, 0, 0, 0.32, 0.3, 0.22, 12, RED).frustum(0, 0.3, 0, 0.22, 0.55, 0, 12, CREAM);
 	mb.pop();
 }
 
@@ -59,11 +58,11 @@ function buildWing(mb) {
 }
 
 function buildBody(mb) {
-	const side = (glass) => [CREAM, RED, RED, CREAM, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
+	const side = (glass) => [CREAM, RED, CREAM, RED, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 2) ? GLASS : c));
 	buildNose(mb);
 	buildWing(mb);
 	mb.loft([
-		{ z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: RED, colors: [CREAM, GLASS, GLASS, CREAM, RED, NAVY, NAVY, RED] }, { z: -1.0, w: 0.64, h: 0.84, y: 0.3, colors: side(true) },
+		{ z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: RED, colors: [GLASS, GLASS, GLASS, RED, RED, NAVY, NAVY, RED] }, { z: -1.0, w: 0.64, h: 0.84, y: 0.3, colors: side(true) },
 		{ z: 0.1, w: 0.63, h: 0.82, y: 0.3, colors: side(true) }, { z: 0.5, w: 0.62, h: 0.8, y: 0.3, colors: side(false) },
 		{ z: 1.7, w: 0.42, h: 0.52, y: 0.38, colors: side(false) }, { z: 3.3, w: 0.18, h: 0.26, y: 0.58, colors: side(false) },
 		{ z: 3.95, w: 0.08, h: 0.14, y: 0.62, color: RED },
@@ -110,7 +109,7 @@ export function buildAircraftMeshes() {
 	const surface = (x0, x1, color, zf = -0.08, zt = 0.38, y = 1.22, t = 0.08) => mesh((mb) => panel(mb, x0, x1, zf, zt, y, t, color));
 	const z = HINGES.rudder.z;
 	return {
-		body: mesh(buildBody), cockpit: mesh(buildNose), gear: mesh(buildGear), blades: mesh(buildBlades), disc: mesh(buildDisc),
+		body: mesh(buildBody), cockpit: mesh((mb) => buildNose(mb, [{ z: -0.6, w: 0.64, h: 0.76, y: 0.22, color: DARK }])), gear: mesh(buildGear), blades: mesh(buildBlades), disc: mesh(buildDisc),
 		aileronL: surface(-4.9, -2.85, RED), aileronR: surface(2.85, 4.9, RED), flapL: surface(-2.85, -0.7, FLAP), flapR: surface(0.7, 2.85, FLAP),
 		elevator: surface(-1.9, 1.9, RED, 3.45, 3.9, 0.62, 0.07),
 		rudder: mesh((mb) => {

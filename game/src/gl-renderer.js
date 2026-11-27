@@ -108,9 +108,9 @@ export class GLRenderer {
 		gl.enable(gl.DEPTH_TEST);
 	}
 
-	drawMesh(mesh, model, { alpha = 1, tint = [1, 1, 1], decal = 0, ground = false } = {}) {
+	drawMesh(mesh, model, { alpha = 1, tint = [1, 1, 1], decal = 0, ground = false, gloss = 0 } = {}) {
 		const gl = this.gl;
-		this.use(this.lit, { uModel: model, uAlpha: alpha, uTint: tint, uGround: ground });
+		this.use(this.lit, { uModel: model, uAlpha: alpha, uTint: tint, uGround: ground, uGloss: gloss });
 		this.blend(alpha < 1 && gl.ONE_MINUS_SRC_ALPHA);
 		gl[decal ? 'enable' : 'disable'](gl.POLYGON_OFFSET_FILL);
 		gl.polygonOffset(-decal, -decal * 2);

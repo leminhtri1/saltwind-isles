@@ -67,6 +67,7 @@ void main() {
 
 export const LIT_FS = HEAD + `uniform float uAlpha;
 uniform float uGround;
+uniform float uGloss;
 uniform vec3 uTint;
 in vec3 vWorld;
 in vec3 vNormal;
@@ -88,7 +89,7 @@ void main() {
 	vec3 amb = mix(vec3(0.3, 0.33, 0.3), vec3(0.46, 0.56, 0.74), n.y * 0.5 + 0.5) * (0.82 + 0.18 * shade);
 	vec3 v = normalize(uCamPos - vWorld);
 	float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0) * 0.12;
-	vec3 col = base * (amb + SUNLIGHT * diff) + rim * HORIZON * 0.5;
+	vec3 col = base * (amb + SUNLIGHT * diff) + rim * HORIZON * 0.5 + uGloss * pow(max(dot(reflect(-uSunDir, n), v), 0.0), 24.0) * shade;
 	col = tonemap(col);
 	col = mix(col, min(base * 1.15 + 0.08, vec3(1.0)), vColor.a);
 	outColor = vec4(applyFog(col, vWorld), uAlpha);

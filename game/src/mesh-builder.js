@@ -76,14 +76,14 @@ export class MeshBuilder {
 		return this;
 	}
 
-	loft(sections) {
-		const rings = sections.map((s) => [...Array(8)].map((_, k) => [Math.cos(k * 0.7854 + 0.3927) * s.w, s.y + Math.sin(k * 0.7854 + 0.3927) * s.h, s.z]));
+	loft(sections, n = 8) {
+		const rings = sections.map((s) => [...Array(n)].map((_, k) => [Math.cos((k + 0.5) * 6.2832 / n) * s.w, s.y + Math.sin((k + 0.5) * 6.2832 / n) * s.h, s.z]));
 		rings.forEach((A, i) => {
 			const B = rings[i + 1], s = sections[i];
-			if (B) for (let k = 0; k < 8; k++) this.quad(A[k], A[(k + 1) % 8], B[(k + 1) % 8], B[k], s.colors ? s.colors[k] : s.color);
+			if (B) for (let k = 0; k < n; k++) this.quad(A[k], A[(k + 1) % n], B[(k + 1) % n], B[k], s.colors ? s.colors[k] : s.color);
 		});
 		const first = rings[0], last = rings[rings.length - 1];
-		for (let k = 1; k < 7; k++) {
+		for (let k = 1; k < n - 1; k++) {
 			this.tri(first[0], first[k + 1], first[k], sections[0].color);
 			this.tri(last[0], last[k], last[k + 1], sections[sections.length - 1].color);
 		}

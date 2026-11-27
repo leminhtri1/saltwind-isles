@@ -30,7 +30,7 @@ export class SceneRenderer {
 			[P.elevator, hinge(el, -S.elevator * 0.42)], [P.rudder, about(model, [0, 0, rudder.z], mat4RotateY(S.rudder * 0.45))],
 		];
 		if (ac.parts.gear < 100) parts.push([P.gear, model]);
-		for (const [mesh, m] of cockpit ? parts.slice(0, 1) : parts) this.r.drawMesh(mesh, m, { tint });
+		for (const [mesh, m] of cockpit ? parts.slice(0, 1) : parts) this.r.drawMesh(mesh, m, { tint, gloss: 0.6 });
 		if (ac.rpm > 500 && !ac.crashed) this.r.drawMesh(P.disc, model, { alpha: 0.28 });
 		else this.r.drawMesh(P.blades, about(model, [0, prop.y, prop.z], mat4RotateZ(ac.propAngle)), { tint });
 		if (ac.crashed || cockpit) return;

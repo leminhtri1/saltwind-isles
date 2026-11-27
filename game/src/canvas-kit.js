@@ -43,6 +43,8 @@ export function text(ctx, t, x, y, px, color = '#fff', weight = 600, font = FONT
 	ctx.fillText(t, x, y);
 }
 
+export const textTL = (ctx, ...a) => text(ctx, ...a, FONT, 'left', 'top');
+
 export function shadowText(ctx, t, x, y, px, color, weight = 700, font = FONT, align = 'center', baseline = 'middle') {
 	ctx.shadowColor = 'rgba(0,0,0,0.75)';
 	ctx.shadowBlur = 4;

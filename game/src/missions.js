@@ -1,5 +1,5 @@
 // Mission runtime: start a sortie with its loadout, follow each step (rings, gate, touchdown, crates, mail), grade it.
-import { DEG, length } from './math3d.js';
+import { DEG, clamp, length } from './math3d.js';
 import { AIRFRAME, worstDamage } from './flight-model.js';
 import { defaultLoadout } from './loadout.js';
 import { layRingCourse, makeRing, ringCrossing } from './rings.js';
@@ -32,7 +32,7 @@ export function startMission(def, world, loadout = defaultLoadout(def)) {
 	const run = {
 		def, loadout, time: 0, status: 'running', result: null, messages: [], sounds: [], rings: [], gate: null, targets: [], crates: [], cratesLeft: 0,
 		ringIndex: 0, targetIndex: 0, stopIndex: 0, holdTimer: 0, firstTouchdown: null, waypoint: null, delivered: [],
-		say: (text, color = '#ffffff', seconds = 2.5) => run.messages.push({ text, color, seconds }),
+		say: (text, color = '#fff', seconds = 2.5) => run.messages.push({ text, color, seconds }),
 	};
 	const k = def.kind, port = findStrip('port'), d = stripDirection(port), back = port.length / 2 - 40;
 	run.start = { pos: [port.x - d[0] * back, port.elev + 1.35, port.z - d[2] * back], heading: port.heading * DEG, flaps: 1, onGround: true };
@@ -92,7 +92,7 @@ function updateLanding(run, ac, world) {
 	res.lines.unshift(gate.passed ? 'Approach gate threaded' : 'Approach gate missed  (-10)');
 	const stores = def.cargo && on ? Math.floor(run.loadout.cargo / 24) : 0;
 	if (stores) res.lines.push(`${run.loadout.cargo} kg of medical stores delivered  (+${stores})`);
-	res.score = Math.max(0, Math.min(100, res.score + stores - (gate.passed ? 0 : 10)));
+	res.score = clamp(res.score + stores - (gate.passed ? 0 : 10), 0, 100);
 	const ok = on && res.score >= 40;
 	const headline = !on ? 'Landed off the strip' : ok ? `Down at ${Math.abs(td.vs).toFixed(1)} m/s, ${Math.round(res.fromThreshold)} m past the threshold, ${Math.abs(td.across).toFixed(1)} m off the line` : `Scored ${res.score} / 100: not good enough to pass`;
 	finish(run, ok, { medal: medalFor(res.score), score: res.score, headline, lines: res.lines, touchdown: td, card: res, stop: stripLocal(findStrip(def.strip), ac.pos[0], ac.pos[2]) });
@@ -108,7 +108,7 @@ function updateCrate(run, c, world, dt) {
 	const dist = Math.hypot(c.pos[0] - t.pos[0], c.pos[2] - t.pos[2]);
 	if (dist >= 150) return run.say(`Crate lost ${Math.round(dist)} m wide`, '#ff8a6b');
 	Object.assign(t, { done: true, dist, score: Math.round(100 * Math.exp(-dist / 45)) });
-	run.say(`${t.name}: ${Math.round(dist)} m from the mark  (+${t.score})`, dist < 15 ? '#ffd36b' : '#ffffff', 3);
+	run.say(`${t.name}: ${Math.round(dist)} m from the mark  (+${t.score})`, dist < 15 ? '#ffd36b' : '#fff', 3);
 	run.sounds.push(dist < 15 ? 'ring' : 'thud');
 	const next = run.targets[++run.targetIndex];
 	run.waypoint = next ? { pos: next.pos, label: 'DROP' } : null;
@@ -120,7 +120,7 @@ function updateDrop(run, ac, world, dt, drop) {
 		ac.cargo = Math.max(0, ac.cargo - run.def.cargo.each);
 		run.crates.push(newCrate(ac));
 		run.sounds.push('drop');
-		run.say(`Crate away: ${run.cratesLeft} left`, '#ffffff', 1.5);
+		run.say(`Crate away: ${run.cratesLeft} left`, '#fff', 1.5);
 	}
 	for (const c of run.crates) if (!c.landed) updateCrate(run, c, world, dt);
 	const allDone = run.targetIndex >= run.targets.length;
