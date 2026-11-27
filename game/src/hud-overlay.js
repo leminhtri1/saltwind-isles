@@ -2,7 +2,7 @@
 import { clamp, projectToScreen } from './math3d.js';
 import { FONT, MONO, line, panel, poly, shadowText, text } from './canvas-kit.js';
 
-const INK = '#f4fff4', ACCENT = '#7dffa8', GLASS = 'rgba(8, 14, 20, 0.55)', EDGE = 'rgba(125, 255, 168, 0.35)', PINK = '#ff5ad1';
+const INK = '#f4fff4', ACCENT = '#7dffa8', GLASS = 'rgba(8, 14, 20, 0.4)', EDGE = 'rgba(125, 255, 168, 0.35)', PINK = '#ff5ad1';
 
 function readout(ctx, x, y, w, h, label, unit, value) {
 	panel(ctx, x, y, w, h, 8, 'rgba(4, 10, 14, 0.88)', ACCENT, 3);
@@ -28,7 +28,7 @@ function scale(ctx, x, y, w, h, from, to, minor, major, at, mark) {
 
 function tape(ctx, x, y, value, perPx, major, label, unit, side) {
 	const ex = x - side * 32;
-	scale(ctx, x - 32, y - 150, 64, 300, value - 150 * perPx, value + 150 * perPx, 10, major, (v) => y - (v - value) / perPx, (yy, big, v) => {
+	scale(ctx, x - 32, y - 120, 64, 240, value - 120 * perPx, value + 120 * perPx, 10, major, (v) => y - (v - value) / perPx, (yy, big, v) => {
 		line(ctx, ex, yy, ex + side * (big ? 14 : 8), yy);
 		if (big && v >= 0) text(ctx, String(Math.round(v)), ex + side * 18, yy, 15, INK, 600, MONO, side < 0 ? 'right' : 'left');
 	});
@@ -92,9 +92,9 @@ export function drawHudOverlay(ctx, W, H, s, hud, viewProj, ac, panelTop, time) 
 			shadowText(ctx, 'CRATE', aim.x, aim.y + 30, 13, '#ffe14d', 800);
 		}
 		const small = (t, x, y, align) => shadowText(ctx, t, x, y, 15, INK, 700, MONO, align);
-		small(`AGL ${Math.round(s.agl)} m`, W - 143, midY + 168, 'left');
-		small(`VS ${s.vs >= 0 ? '+' : ''}${s.vs.toFixed(1)} m/s`, W - 143, midY + 189, 'left');
-		small(`GS ${Math.round(s.groundSpeed)} km/h`, 143, midY + 168, 'right');
+		small(`AGL ${Math.round(s.agl)} m`, W - 143, midY + 138, 'left');
+		small(`VS ${s.vs >= 0 ? '+' : ''}${s.vs.toFixed(1)} m/s`, W - 143, midY + 159, 'left');
+		small(`GS ${Math.round(s.groundSpeed)} km/h`, 143, midY + 138, 'right');
 	}
 	const warn = s.stall ? 'STALL' : s.overspeed ? 'OVERSPEED' : s.pullUp ? 'PULL UP' : s.fuel <= 0 ? 'NO FUEL' : s.engineFail ? 'ENGINE FAILURE' : null;
 	if (warn && Math.floor(time * 4) % 2 === 0) shadowText(ctx, warn, W / 2, 192, 44, '#ff3b2f', 900);
