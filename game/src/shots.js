@@ -42,7 +42,7 @@ export function stageShot(name, { game, camera, world, simulate, startMissionAt 
 		Object.assign(camera, { lookYaw: 0.3, offset: null }).follow(ac(), FRAME, { looking: true, lookDx: 0, lookDy: 0 }, world.terrain.heightAt);
 	} else {
 		const geo = start('approach').geo, p = glidePathPoint(geo, 720, 300);
-		place([p[0] - geo.dir[2] * 6, p[1] + 8, p[2] + geo.dir[0] * 6], geo.heading - 3, -1, -12, 40, { throttle: 0.4 });
+		place([p[0] - geo.dir[2] * 6, p[1] + 8, p[2] + geo.dir[0] * 6], geo.heading - 3, -1, -20, 40, { throttle: 0.4 });
 		game.run.time = 43;
 		fly(0.6, { pitch: 0.04, roll: 0, yaw: 0 });
 	}
