@@ -40,14 +40,14 @@ export class FlightCamera {
 		const dir = normalize(lerp3(flat[0] || flat[2] ? flat : fwd, fwd, 0.4));
 		const cy = Math.cos(this.lookYaw), sy = Math.sin(this.lookYaw);
 		const back = [-(dir[0] * cy - dir[2] * sy), -dir[1], -(dir[0] * sy + dir[2] * cy)];
-		const dist = 16, height = 4.8 + this.lookPitch * 14;
+		const dist = 14, height = 4.2 + this.lookPitch * 14;
 		const desired = madd(scale(back, dist), [0, 1, 0], height);
 		if (!this.offset) this.offset = desired;
 		this.offset = lerp3(this.offset, desired, damp(4.5, dt));
 		this.eye = add(ac.pos, this.offset);
 		const floor = Math.max(0, ground(this.eye[0], this.eye[2])) + 2;
 		if (this.eye[1] < floor) this.eye[1] = floor;
-		this.target = madd(madd(ac.pos, fwd, 8), [0, 1, 0], 1.2);
+		this.target = madd(ac.pos, fwd, 8);
 		this.up = normalize(lerp3([0, 1, 0], acUp, 0.22));
 		this.fov = 50;
 	}

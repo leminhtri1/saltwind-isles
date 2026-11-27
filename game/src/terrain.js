@@ -5,7 +5,6 @@ import { MeshBuilder } from './mesh-builder.js';
 import { ISLAND_BLOBS, SEA_FLOOR, STRIPS, TERRAIN_CELLS, VILLAGES, WORLD_HALF, WORLD_SEED, stripLocal } from './world-layout.js';
 
 const COLORS = {
-	sand: [0.97, 0.93, 0.8],
 	wetSand: [0.86, 0.8, 0.66],
 	grassLight: [0.36, 0.6, 0.16],
 	grassDark: [0.17, 0.42, 0.12],
@@ -91,7 +90,7 @@ export function createTerrain(seed = WORLD_SEED) {
 		const n = noise(x / 90, z / 90);
 		let c;
 		if (h < 0) c = COLORS.seabed;
-		else if (h < 2.2 + n * 1.6) c = h < 0.7 ? COLORS.wetSand : COLORS.sand;
+		else if (h < 0.7) c = COLORS.wetSand;
 		else if (ny < 0.74 && h < 90) c = ny < 0.5 ? COLORS.chalkShade : COLORS.chalk; // sea cliffs
 		else if (ny < 0.7 || h > 300 + n * 40) c = ny < 0.55 || n > 0.2 ? COLORS.rockDark : COLORS.rock;
 		else {
@@ -100,7 +99,6 @@ export function createTerrain(seed = WORLD_SEED) {
 			const meadow = (ny > 0.92 && h < 120 && fieldAt(x, z)) || lerp3(COLORS.grassLight, COLORS.grassDark, g);
 			c = lerp3(meadow, COLORS.forest, smoothstep(0.35, 0.7, f));
 			if (h > 200) c = lerp3(c, COLORS.rock, smoothstep(200, 300, h) * 0.7);
-			if (h < 4.5) c = lerp3(c, COLORS.sand, 0.4);
 		}
 		const k = (1 + (jitter - 0.5) * 0.09) * clamp(1 - hollow * 0.018, 0.7, 1.08);
 		return [c[0] * k, c[1] * k, c[2] * k, 0];

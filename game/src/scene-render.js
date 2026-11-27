@@ -69,7 +69,7 @@ export class SceneRenderer {
 		const right = [view[0], view[4], view[8]], up = [view[1], view[5], view[9]];
 		for (const b of [this.smoke, this.glow, this.debris, this.puffs]) b.clear();
 		r.drawSky();
-		r.drawMesh(this.terrain, id, { ground: true });
+		r.drawMesh(this.terrain, id, { ground: 2 });
 		r.drawWater(this.water);
 		for (const [mesh, decal] of this.statics) r.drawMesh(mesh, id, { decal, ground: decal > 0 });
 		const wind = this.world.windAt(this.sockPos, time), sag = clamp(1.3 - Math.hypot(wind[0], wind[2]) * 0.12, 0.1, 1.3);

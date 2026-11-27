@@ -83,6 +83,7 @@ void main() {
 		float fade = clamp(1.0 - length(uCamPos - vWorld) / 1800.0, 0.0, 1.0);
 		float m = vnoise(p * 0.11) * 0.55 + vnoise(p * 0.37) * 0.3 + vnoise(p * 1.3) * 0.15;
 		base *= 1.0 + (m - 0.5) * 0.34 * fade;
+		if (uGround > 1.5) base = mix(vec3(0.96, 0.91, 0.76), base, smoothstep(1.4, 3.0, vWorld.y + m * 2.4 - 1.2));
 		shade = cloudLight(vWorld);
 	}
 	float diff = max(dot(n, uSunDir), 0.0) * shade;
