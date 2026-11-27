@@ -164,7 +164,9 @@ export function drawInstrumentPanel(ctx, W, H, s, tall = false) {
 	ctx.save();
 	ctx.beginPath();
 	if (tall) {
-		for (const [a, b, c] of [[0, 0.1, 0.04], [1, 0.9, 0.96]]) poly(ctx, [[W * a, 0], [W * b, 0], [W * c, top], [W * a, top]], '#1d1f22');
+		ctx.lineWidth = 3 * k;
+		for (const [a, b, c] of [[0, 0.1, 0.04], [1, 0.9, 0.96]]) poly(ctx, [[W * a, 0], [W * b, 0], [W * c, top], [W * a, top]], gradient(ctx.createLinearGradient(W * a, 0, W * b, 0), ['#0b0c0e', '#3a3e44', '#202226']), '#55585e');
+		ctx.fillStyle = '#1d1f22';
 		ctx.fillRect(0, 0, W, H * 0.035);
 		ctx.fillRect(W / 2 - 5, 0, 10, H * 0.12);
 		ctx.beginPath();
