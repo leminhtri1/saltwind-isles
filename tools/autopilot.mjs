@@ -1,5 +1,5 @@
 // A landing autopilot for demonstrations and tests: holds the 3.2° path and centreline, slows on final, flares near the ground.
-import { attitudeOf } from './math3d.js';
+import { attitudeOf } from '../game/src/math3d.js';
 
 const clamp1 = (v) => Math.max(-1, Math.min(1, v));
 

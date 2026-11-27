@@ -28,9 +28,9 @@ export class FlightCamera {
 		const fwd = quatRotate(ac.q, [0, 0, -1]);
 		const acUp = quatRotate(ac.q, [0, 1, 0]);
 		if (this.mode === 'cockpit') {
-			this.eye = add(ac.pos, quatRotate(ac.q, [0, 0.82, -0.85]));
+			this.eye = add(ac.pos, quatRotate(ac.q, [0, 1.5, -0.4]));
 			const cy = Math.cos(this.lookYaw), sy = Math.sin(this.lookYaw);
-			const local = [-sy * Math.cos(this.lookPitch), Math.sin(this.lookPitch) - 0.08, -cy * Math.cos(this.lookPitch)];
+			const local = [-sy * Math.cos(this.lookPitch), Math.sin(this.lookPitch) - 0.25, -cy * Math.cos(this.lookPitch)];
 			this.target = add(this.eye, quatRotate(ac.q, local));
 			this.up = acUp;
 			this.fov = 74;
@@ -40,7 +40,7 @@ export class FlightCamera {
 		const dir = normalize(lerp3(flat[0] || flat[2] ? flat : fwd, fwd, 0.4));
 		const cy = Math.cos(this.lookYaw), sy = Math.sin(this.lookYaw);
 		const back = [-(dir[0] * cy - dir[2] * sy), -dir[1], -(dir[0] * sy + dir[2] * cy)];
-		const dist = 19, height = 5.6 + this.lookPitch * 14;
+		const dist = 16, height = 4.8 + this.lookPitch * 14;
 		const desired = madd(scale(back, dist), [0, 1, 0], height);
 		if (!this.offset) this.offset = desired;
 		this.offset = lerp3(this.offset, desired, damp(4.5, dt));

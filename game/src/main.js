@@ -154,7 +154,7 @@ function drawFrame(W, H) {
 	if (!ac.crashed) {
 		const panelTop = drawInstrumentPanel(hud, W, H, s, cockpit);
 		Object.assign(info, {
-			lines: objectiveLines(run, ac), clock: run.def.kind !== 'free' ? formatTime(run.time) : null, waypoint: run.waypoint,
+			lines: [...objectiveLines(run, ac), `Fuel ${Math.round(ac.fuel)} L · Load ${Math.round(ac.cargo)} kg · Damage ${Math.round(s.damage * 100)}%`], clock: run.def.kind !== 'free' ? formatTime(run.time) : null, waypoint: run.waypoint,
 			bugDeg: s.bearing === null ? null : ((s.bearing * 180) / Math.PI + 360) % 360,
 			dropAim: run.def.kind === 'drop' && !ac.onGround && run.cratesLeft > 0 ? predictCrateLanding(ac, world, run.time) : null,
 		});
@@ -239,7 +239,7 @@ Object.defineProperty(window, '__flight', {
 });
 
 if (shotName) {
-	stageShot(shotName, { game, world, camera, effects, startMissionAt, simulate, finishSortie });
+	stageShot(shotName, { game, world, camera, startMissionAt, simulate });
 	const { W, H } = resize();
 	drawFrame(W, H);
 	requestAnimationFrame(() => {

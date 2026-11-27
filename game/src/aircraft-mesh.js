@@ -36,38 +36,46 @@ function panel(mb, x0, x1, zf, zt, y, t, top, bottom = top) {
 	}
 }
 
-function buildBody(mb) {
-	const side = (glass) => [CREAM, RED, RED, CREAM, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
-	const front = [CREAM, GLASS, GLASS, CREAM, RED, NAVY, NAVY, RED];
-	mb.loft([
-		{ z: -3.35, w: 0.42, h: 0.42, y: 0.05, color: RED }, { z: -2.6, w: 0.56, h: 0.56, y: 0.08, color: RED },
-		{ z: -1.7, w: 0.62, h: 0.7, y: 0.2, colors: front }, { z: -1.0, w: 0.64, h: 0.84, y: 0.3, colors: side(true) },
-		{ z: 0.1, w: 0.63, h: 0.82, y: 0.3, colors: side(true) }, { z: 0.5, w: 0.62, h: 0.8, y: 0.3, colors: side(false) },
-		{ z: 1.7, w: 0.42, h: 0.52, y: 0.38, colors: side(false) }, { z: 3.3, w: 0.18, h: 0.26, y: 0.58, colors: side(false) },
-		{ z: 3.95, w: 0.08, h: 0.14, y: 0.62, color: RED },
-	]);
+function buildNose(mb) {
+	const top = [RED, CREAM, CREAM, RED, RED, RED, RED, RED];
+	mb.loft([{ z: -3.35, w: 0.42, h: 0.42, y: 0.05, color: RED, colors: top }, { z: -2.6, w: 0.56, h: 0.56, y: 0.08, colors: top }, { z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: DARK }]);
 	for (let k = 0; k < 4; k++) mb.box(0, 0.63, -2.75 + k * 0.17, 0.42, 0.03, 0.06, DARK);
 	mb.box(0, -0.5, -2.65, 0.36, 0.14, 0.4, DARK);
-	for (const s of [-1, 1]) {
-		mb.box(s * 0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
-		for (const z of [-0.42, -1.02]) mb.box(s * 0.63, 0.32, z, 0.02, 0.9, 0.025, DARK);
-		mb.box(s * 0.7, -0.45, -0.75, 0.25, 0.04, 0.16, METAL);
-		mb.box(s * 1.6, 1.33, -0.8, 0.14, 0.03, 0.14, DARK);
-	}
+	for (const s of [-1, 1]) mb.box(s * 0.45, -0.38, -2.3, 0.1, 0.1, 0.5, DARK);
+	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
+	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
+	mb.pop();
+}
+
+function buildWing(mb) {
 	[-5.6, -4.5, -4.2, -3.9, 3.9, 4.2, 4.5, 5.6].forEach((x, i, xs) => i < 7 && panel(mb, x, xs[i + 1], -1.35, -0.08, 1.22, 0.2, i % 2 ? CREAM : RED, i % 2 ? UNDER : RED));
 	mb.box(0, 1.28, -0.7, 1.3, 0.1, 1.1, CREAM);
 	panel(mb, -0.7, 0.7, -0.08, 0.35, 1.22, 0.08, CREAM);
 	for (const s of [-1, 1]) {
 		beam(mb, [s * 2.6, 1.12, -0.55], [s * 0.58, -0.32, -0.55], 0.05);
 		beam(mb, [s * 2.4, 1.12, -0.15], [s * 0.58, -0.3, -0.2], 0.04);
+		mb.box(s * 1.6, 1.33, -0.8, 0.14, 0.03, 0.14, DARK);
+	}
+}
+
+function buildBody(mb) {
+	const side = (glass) => [CREAM, RED, RED, CREAM, RED, RED, RED, RED].map((c, k) => (glass && (k === 0 || k === 3) ? GLASS : c));
+	buildNose(mb);
+	buildWing(mb);
+	mb.loft([
+		{ z: -1.7, w: 0.62, h: 0.7, y: 0.2, color: RED, colors: [CREAM, GLASS, GLASS, CREAM, RED, NAVY, NAVY, RED] }, { z: -1.0, w: 0.64, h: 0.84, y: 0.3, colors: side(true) },
+		{ z: 0.1, w: 0.63, h: 0.82, y: 0.3, colors: side(true) }, { z: 0.5, w: 0.62, h: 0.8, y: 0.3, colors: side(false) },
+		{ z: 1.7, w: 0.42, h: 0.52, y: 0.38, colors: side(false) }, { z: 3.3, w: 0.18, h: 0.26, y: 0.58, colors: side(false) },
+		{ z: 3.95, w: 0.08, h: 0.14, y: 0.62, color: RED },
+	]);
+	for (const s of [-1, 1]) {
+		for (const z of [-0.42, -1.02]) mb.box(s * 0.63, 0.32, z, 0.02, 0.9, 0.025, DARK);
+		mb.box(s * 0.7, -0.45, -0.75, 0.25, 0.04, 0.16, METAL);
 	}
 	panel(mb, -1.9, 1.9, 2.75, 3.45, 0.62, 0.1, CREAM);
 	mb.quad([0, 0.75, 2.4], [0, 0.75, 3.5], [0, 1.45, 3.5], [0, 1.42, 2.75], RED);
 	mb.quad([0, 1.42, 2.75], [0, 1.45, 3.5], [0, 1.62, 3.5], [0, 1.6, 2.85], CREAM);
 	mb.quad([0, 1.6, 2.85], [0, 1.62, 3.5], [0, 2.15, 3.5], [0, 2.1, 3.05], RED);
-	mb.push(mat4Compose(mat4Translate(0, HINGES.prop.y, -3.35), mat4RotateX(-Math.PI / 2)));
-	mb.frustum(0, 0, 0, 0.3, 0.5, 0, 8, RED);
-	mb.pop();
 }
 
 function buildGear(mb) {
@@ -102,7 +110,7 @@ export function buildAircraftMeshes() {
 	const surface = (x0, x1, color, zf = -0.08, zt = 0.38, y = 1.22, t = 0.08) => mesh((mb) => panel(mb, x0, x1, zf, zt, y, t, color));
 	const z = HINGES.rudder.z;
 	return {
-		body: mesh(buildBody), gear: mesh(buildGear), blades: mesh(buildBlades), disc: mesh(buildDisc),
+		body: mesh(buildBody), cockpit: mesh(buildNose), gear: mesh(buildGear), blades: mesh(buildBlades), disc: mesh(buildDisc),
 		aileronL: surface(-4.9, -2.85, RED), aileronR: surface(2.85, 4.9, RED), flapL: surface(-2.85, -0.7, FLAP), flapR: surface(0.7, 2.85, FLAP),
 		elevator: surface(-1.9, 1.9, RED, 3.45, 3.9, 0.62, 0.07),
 		rudder: mesh((mb) => {

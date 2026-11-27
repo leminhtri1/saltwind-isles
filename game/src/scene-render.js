@@ -23,18 +23,17 @@ export class SceneRenderer {
 	}
 
 	drawAircraft(ac, cockpit, time, right, up) {
-		if (cockpit) return;
 		const P = this.plane, S = ac.surfaces, model = mat4FromQuatPos(ac.q, ac.pos), tint = ac.crashed ? [0.42, 0.38, 0.36] : [1, 1, 1];
 		const { wingTrailing: wt, elevator: el, rudder, prop } = HINGES, a = S.aileron * 0.38, f = ac.flapAngle * 0.62, hinge = (h, ang) => about(model, [0, h.y, h.z], mat4RotateX(ang));
 		const parts = [
-			[P.body, model], [P.aileronL, hinge(wt, a)], [P.aileronR, hinge(wt, -a)], [P.flapL, hinge(wt, f)], [P.flapR, hinge(wt, f)],
+			[cockpit ? P.cockpit : P.body, model], [P.aileronL, hinge(wt, a)], [P.aileronR, hinge(wt, -a)], [P.flapL, hinge(wt, f)], [P.flapR, hinge(wt, f)],
 			[P.elevator, hinge(el, -S.elevator * 0.42)], [P.rudder, about(model, [0, 0, rudder.z], mat4RotateY(S.rudder * 0.45))],
 		];
-		if (ac.parts.gear < 100) parts.push([P.gear, model]);
+		if (ac.parts.gear < 100 && !cockpit) parts.push([P.gear, model]);
 		for (const [mesh, m] of parts) this.r.drawMesh(mesh, m, { tint });
 		if (ac.rpm > 500 && !ac.crashed) this.r.drawMesh(P.disc, model, { alpha: 0.28 });
 		else this.r.drawMesh(P.blades, about(model, [0, prop.y, prop.z], mat4RotateZ(ac.propAngle)), { tint });
-		if (ac.crashed) return;
+		if (ac.crashed || cockpit) return;
 		for (const l of NAV_LIGHTS) if (!l.flash || time % 1.2 < 0.12) this.glow.billboard(ac.pos.map((c, i) => c + quatRotate(ac.q, l.p)[i]), l.flash ? 1.1 : 0.5, [...l.c, 0.9], right, up);
 		const g = Math.max(0, this.world.surfaceAt(ac.pos[0], ac.pos[2]).height), agl = ac.pos[1] - g, fw = quatRotate(ac.q, [0, 0, -1]), hf = Math.hypot(fw[0], fw[2]) || 1;
 		if (agl > 160) return;
@@ -55,7 +54,7 @@ export class SceneRenderer {
 	}
 
 	ringGlow(ring, c, right, up, eye) {
-		const R = RING_RADIUS, ax = quatRotate(ring.q, [R, 0, 0]), ay = quatRotate(ring.q, [0, R, 0]), s = Math.max(3.2, length(sub(ring.pos, eye)) * 0.006);
+		const R = RING_RADIUS, ax = quatRotate(ring.q, [R, 0, 0]), ay = quatRotate(ring.q, [0, R, 0]), s = Math.max(3.2, length(sub(ring.pos, eye)) * 0.008);
 		for (let i = 0; i < 20; i++) {
 			const co = Math.cos(i * 0.314), si = Math.sin(i * 0.314);
 			this.glow.billboard(ring.pos.map((p, k) => p + ax[k] * co + ay[k] * si), s, [...c, 0.55], right, up);

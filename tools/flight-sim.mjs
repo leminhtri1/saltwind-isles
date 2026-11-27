@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 const src = (f) => pathToFileURL(resolve(join(import.meta.dirname, '..', 'game', 'src', f))).href;
 const { createWorld } = await import(src('world.js'));
 const { createAircraft, stepAircraft } = await import(src('flight-model.js'));
-const { landingAutopilot } = await import(src('autopilot.js'));
+const { landingAutopilot } = await import('./autopilot.mjs');
 const { startMission, updateMission } = await import(src('missions.js'));
 const { MISSIONS } = await import(src('mission-catalog.js'));
 const { attitudeOf } = await import(src('math3d.js'));
