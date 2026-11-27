@@ -5,7 +5,8 @@ import { meshOf } from './mesh-builder.js';
 export const buildCrate = () => meshOf((mb) => mb.box(0, 0, 0, 1.4, 1.1, 1.4, [0.62, 0.42, 0.22, 0]).box(0, 0, 0, 1.46, 0.2, 1.46, [0.85, 0.2, 0.15, 0]));
 
 export const buildChute = () => meshOf((mb) => {
-	mb.blob(0, 7, 0, 4.6, 2.3, 4.6, [0.98, 0.5, 0.16, 0.15], 4, 8, [0.95, 0.92, 0.85, 0.1]);
+	const p = (i, j) => [Math.cos(i * 0.5236) * Math.sin(j * 0.42) * 4.6, 6 + Math.cos(j * 0.42) * 2.3, Math.sin(i * 0.5236) * Math.sin(j * 0.42) * 4.6];
+	for (let i = 0; i < 12; i++) for (let j = 0; j < 4; j++) mb.quad(p(i, j), p(i + 1, j), p(i + 1, j + 1), p(i, j + 1), i % 2 ? [0.97, 0.95, 0.9, 0.1] : [0.98, 0.42, 0.12, 0.15]);
 	for (const [x, z] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) mb.box(x, 3.5, z, 0.06, 6.2, 0.06, [0.9, 0.9, 0.9, 0]);
 });
 

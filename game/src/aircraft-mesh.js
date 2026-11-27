@@ -101,7 +101,7 @@ function buildBlades(mb) {
 function buildDisc(mb) {
 	const { y, z } = HINGES.prop, p = (i, r) => [Math.cos(i * 0.314) * r, y + Math.sin(i * 0.314) * r, z];
 	for (let i = 0; i < 20; i++) {
-		mb.tri([0, y, z], p(i, 1.04), p(i + 1, 1.04), [0.55, 0.55, 0.55, 0]);
+		mb.tri([0, y, z], p(i, 1.04), p(i + 1, 1.04), [0.8, 0.8, 0.8, 0]);
 		mb.tri(p(i, 1.04), p(i, 0.97), p(i + 1, 1.04), [1, 0.85, 0.3, 0.4]);
 	}
 }

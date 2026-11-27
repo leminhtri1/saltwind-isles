@@ -37,12 +37,13 @@ export function stageShot(name, { game, camera, world, simulate, startMissionAt 
 		const run = start('rings'), i = 9, { pos: r, normal: n } = run.rings[i], h = Math.atan2(n[0], -n[2]) / DEG;
 		run.rings.slice(0, i).forEach((g) => (g.passed = true));
 		Object.assign(run, { ringIndex: i, time: 12 * i, waypoint: { pos: r, label: `RING ${i + 1}` } });
-		place([r[0] - n[0] * 190 + n[2] * 9, r[1] - 3, r[2] - n[2] * 190 - n[0] * 9], h + 3, 1, 14, 52, { throttle: 0.8, fuel: 52 });
-		fly(0.5, { pitch: 0.05, roll: 0, yaw: 0 });
+		place([r[0] - n[0] * 190 + n[2] * 9, r[1] - 3, r[2] - n[2] * 190 - n[0] * 9], h + 3, 1, 14, 52, { throttle: 0.8, fuel: 52, parts: { engine: 64, gear: 0, flaps: 0, airframe: 18 } });
+		fly(1.2, { pitch: 0.05, roll: 0, yaw: 0 });
 		Object.assign(camera, { lookYaw: 0.3, offset: null }).follow(ac(), FRAME, { looking: true, lookDx: 0, lookDy: 0 }, world.terrain.heightAt);
 	} else {
 		const geo = start('approach').geo, p = glidePathPoint(geo, 720, 300);
 		place([p[0] - geo.dir[2] * 6, p[1] + 8, p[2] + geo.dir[0] * 6], geo.heading - 3, -1, -12, 40, { throttle: 0.4 });
+		game.run.time = 43;
 		fly(0.6, { pitch: 0.04, roll: 0, yaw: 0 });
 	}
 }
