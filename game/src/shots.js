@@ -19,7 +19,7 @@ export function stageShot(name, { game, camera, world, simulate, startMissionAt 
 	};
 	game.time = 40;
 	if (name === 'cockpit') {
-		const run = start('crosswind'), geo = run.geo, p = glidePathPoint(geo, 330, 300);
+		const run = start('crosswind'), geo = run.geo, p = glidePathPoint(geo, 240, 300);
 		camera.mode = 'cockpit';
 		place(p, geo.heading + 15, -1, 2, 31, { throttle: 0.3, flaps: 2, flapAngle: 1, fuel: 38 });
 		ac().vel = scale(geo.dir, 30);
